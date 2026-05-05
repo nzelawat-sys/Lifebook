@@ -1,54 +1,100 @@
-import { useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "sonner";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Header from "./components/Header";
+import LoginPage from "./pages/LoginPage";
+import DashboardPage from "./pages/DashboardPage";
+import CategoryPage from "./pages/CategoryPage";
+import InsightsPage from "./pages/InsightsPage";
+import SearchPage from "./pages/SearchPage";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
+function Protected({ children }) {
+    const { user, loading } = useAuth();
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-paper text-ink-muted">
+                Loading…
+            </div>
+        );
     }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
-
-function App() {
-  return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
-  );
+    if (!user) return <Navigate to="/login" replace />;
+    return (
+        <>
+            <Header />
+            {children}
+        </>
+    );
 }
 
-export default App;
+function PublicOnly({ children }) {
+    const { user, loading } = useAuth();
+    if (loading) return null;
+    if (user) return <Navigate to="/" replace />;
+    return children;
+}
+
+export default function App() {
+    return (
+        <div className="App">
+            <BrowserRouter>
+                <AuthProvider>
+                    <Toaster
+                        position="bottom-right"
+                        toastOptions={{
+                            style: {
+                                background: "#1C1917",
+                                color: "#F9F6F0",
+                                border: "1px solid #2F3E35",
+                                fontFamily: "Manrope, sans-serif",
+                            },
+                        }}
+                    />
+                    <Routes>
+                        <Route
+                            path="/login"
+                            element={
+                                <PublicOnly>
+                                    <LoginPage />
+                                </PublicOnly>
+                            }
+                        />
+                        <Route
+                            path="/"
+                            element={
+                                <Protected>
+                                    <DashboardPage />
+                                </Protected>
+                            }
+                        />
+                        <Route
+                            path="/category/:slug"
+                            element={
+                                <Protected>
+                                    <CategoryPage />
+                                </Protected>
+                            }
+                        />
+                        <Route
+                            path="/insights"
+                            element={
+                                <Protected>
+                                    <InsightsPage />
+                                </Protected>
+                            }
+                        />
+                        <Route
+                            path="/search"
+                            element={
+                                <Protected>
+                                    <SearchPage />
+                                </Protected>
+                            }
+                        />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                </AuthProvider>
+            </BrowserRouter>
+        </div>
+    );
+}

@@ -1,0 +1,136 @@
+{
+  "theme": "Light",
+  "archetype": "1 (Organic & Earthy) - Modified for Luxury Editorial",
+  "design_philosophy": "A sacred, personal life-reflection space. The app should feel like a luxury leather-bound journal meets a contemplative editorial magazine. Prioritize generous whitespace, refined typography, and evocative photography over standard SaaS layouts.",
+  "colors": {
+    "background": {
+      "primary": "#F9F6F0",
+      "secondary": "#EAE5D9",
+      "tertiary": "#DFD8C8"
+    },
+    "text": {
+      "primary": "#1C1917",
+      "secondary": "#44403C",
+      "muted": "#78716C"
+    },
+    "accent": {
+      "primary": "#2F3E35",
+      "secondary": "#C8795A",
+      "tertiary": "#8A9A86"
+    },
+    "border": "#D6D1C4"
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Cormorant Garamond', serif",
+      "body": "'Manrope', sans-serif",
+      "mono": "'JetBrains Mono', monospace"
+    },
+    "scale": {
+      "h1": "text-5xl lg:text-6xl tracking-tight leading-none font-light",
+      "h2": "text-3xl lg:text-4xl tracking-tight leading-snug font-normal",
+      "h3": "text-xl lg:text-2xl tracking-normal leading-snug font-medium",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm tracking-wide uppercase"
+    }
+  },
+  "spacing_and_layout": {
+    "general": "Generous spacing. Use p-8, p-12, or p-16 for main sections. Allow content to breathe.",
+    "dashboard_grid": "Bento-style grid for the 12 categories, using varying span widths (col-span-1, col-span-2) depending on screen size to create an asymmetric, editorial feel.",
+    "components": "Avoid heavy drop shadows. Use 1px subtle borders (border-border) with very soft or no shadow. Subtle rounded corners (rounded-lg or rounded-xl, avoid pill-shapes for content)."
+  },
+  "components": {
+    "cards": "Flat background, 1px subtle border, no shadow by default. On hover: slight lift (-translate-y-1) and soft shadow.",
+    "buttons": "Primary buttons: Dark forest green (#2F3E35) background with white text, or Terracotta (#C8795A). Use pure HTML/Tailwind for custom layouts, Shadcn for interactive components (dropdowns, inputs).",
+    "inputs": "Shadcn inputs with custom styling: transparent backgrounds, underline only (border-b) or subtle 1px full borders, no thick focus rings.",
+    "navigation": "Sticky header with glassmorphism (backdrop-blur-xl bg-[#F9F6F0]/80), extremely clean, serif logo."
+  },
+  "media": {
+    "guidelines": "Images must have an editorial, contemplative, and warm aesthetic. Use subtle black/white or gradient overlays to ensure text readability.",
+    "image_urls": {
+      "hero_background": {
+        "url": "https://images.pexels.com/photos/34725104/pexels-photo-34725104.jpeg",
+        "description": "Serene sunset with reflections on calm water",
+        "category": "landing_page_hero"
+      },
+      "category_health_fitness": {
+        "url": "https://images.unsplash.com/photo-1770563181231-9dfa3b1b06fa",
+        "description": "Two people hiking on a forest path",
+        "category": "health_fitness"
+      },
+      "category_intellectual": {
+        "url": "https://images.unsplash.com/photo-1649605475588-f5e665789358",
+        "description": "Large library filled with books",
+        "category": "intellectual"
+      },
+      "category_emotional": {
+        "url": "https://images.unsplash.com/photo-1748183607998-30e288846885",
+        "description": "Grasses grow by a body of water",
+        "category": "emotional"
+      },
+      "category_character": {
+        "url": "https://images.pexels.com/photos/30420424/pexels-photo-30420424.jpeg",
+        "description": "A single tree with sparse foliage stands against a bright sky",
+        "category": "character"
+      },
+      "category_spiritual": {
+        "url": "https://images.unsplash.com/photo-1514185542902-bbfeac2fa9a4",
+        "description": "Flock of birds flying over the clouds",
+        "category": "spiritual"
+      },
+      "category_love_relationship": {
+        "url": "https://images.unsplash.com/photo-1759309607967-9e56fd347acc",
+        "description": "Couple holding hands outdoors with soft sunlight",
+        "category": "love_relationship"
+      },
+      "category_parenting": {
+        "url": "https://images.unsplash.com/photo-1609220136736-443140cffec6",
+        "description": "Warm family moment",
+        "category": "parenting"
+      },
+      "category_social": {
+        "url": "https://images.unsplash.com/photo-1529156069898-49953eb1b5a4",
+        "description": "Friends gathering",
+        "category": "social"
+      },
+      "category_financial": {
+        "url": "https://images.pexels.com/photos/33685861/pexels-photo-33685861.jpeg",
+        "description": "Luxurious modern interior featuring marble floors",
+        "category": "financial"
+      },
+      "category_career": {
+        "url": "https://images.unsplash.com/photo-1612303544167-5871c2331e36",
+        "description": "Brown wooden board on white table workspace",
+        "category": "career"
+      },
+      "category_quality_of_life": {
+        "url": "https://images.pexels.com/photos/33685860/pexels-photo-33685860.jpeg",
+        "description": "Stylish living space featuring contemporary furniture",
+        "category": "quality_of_life"
+      },
+      "category_life_vision": {
+        "url": "https://images.unsplash.com/photo-1671435302799-35d7fde02b90",
+        "description": "Black and white photo of a horse / poetic vision",
+        "category": "life_vision"
+      }
+    }
+  },
+  "interactive_elements": {
+    "hover_states": "All buttons and links must have defined hover states. E.g., hover:bg-[#2F3E35]/90 hover:text-white.",
+    "focus_states": "Focus outlines should use the primary accent color.",
+    "animations": "Subtle entrance animations using Framer Motion (fade in and slight slide up). Smooth transitions for tabs."
+  },
+  "testing": {
+    "attributes": "All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid='login-button', data-testid='category-card-health')."
+  },
+  "instructions_to_main_agent": [
+    "Install required fonts: Cormorant Garamond and Manrope from Google Fonts.",
+    "Setup Tailwind config with the specified colors and font families.",
+    "Create a responsive, bento-style grid dashboard for the 12 categories using the provided media URLs.",
+    "Build a rich text editor for the Premise, Purpose, Vision, and Strategy tabs within each category.",
+    "Implement an autosave mechanism and reflection history timeline.",
+    "Integrate an AI assistant panel that slides in or sits alongside the editor.",
+    "Use Phosphor Icons (yarn add @phosphor-icons/react) for an elegant, thin-stroke icon aesthetic.",
+    "Do NOT use standard SaaS dashboards. The UI must feel like reading an elegant, minimal digital magazine."
+  ]
+}

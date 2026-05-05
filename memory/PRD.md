@@ -35,6 +35,18 @@ User wanted a deeply personal "My Life Book" web app — a private, beautiful pl
 - ✅ Editorial design: Cormorant Garamond + Manrope, paper grain, sunset hero, bento grid of 12 chapters with custom image + accent color per category.
 - ✅ Backend tested: 22/22 pytest cases passing including 3 real Claude calls.
 
+## What's Implemented — Iteration 2 (2026-02-05 PM)
+- ✅ **Rich text editor** for entries — bold / italic / H2 / H3 / lists / blockquote, contenteditable-based, no extra deps. Auto-saves HTML on blur.
+- ✅ **Object storage upload** via Emergent Object Storage. `/api/upload` + `/api/files/{path}?auth=token` with per-user data isolation, 8MB cap, image-only.
+- ✅ **Dark theme** — full light/dark toggle in header. Dark palette is warm candlelit (deep #16130F bg, parchment #F1ECDF text, ochre forest #C9B98E accents). Toasts adapt.
+- ✅ **Financial chapter, deeply seeded** from the user's source documents:
+  - 9 Premise + 9 Purpose + 9 Vision + 15 Strategy prompts (42 total) — drawn directly from the user's Lifebook financial doc.
+  - 8 curated quotes (Lowell, Tucker, Thatcher, Franklin x2, Wilde, Seneca, Kiyosaki) — all users see these.
+  - 4 inspiration images (luxury/abundance imagery).
+- ✅ **Idempotent additive seeding** — when new prompts are added later, existing accounts pick them up on next request without losing existing answers.
+- ✅ **Multi-tenant by design** — every account sees the same questions; only their answers are private.
+- ✅ Backend tested: **35/35 pytest** (22 baseline + 13 iter-2), 100% passing.
+
 ## Prioritized Backlog
 ### P0
 - (none — MVP shipped end-to-end)

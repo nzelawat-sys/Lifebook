@@ -14,25 +14,24 @@ module.exports = {
             },
             colors: {
                 paper: {
-                    DEFAULT: "#F9F6F0",
-                    soft: "#EAE5D9",
-                    deeper: "#DFD8C8",
+                    DEFAULT: "var(--atlas-paper)",
+                    soft: "var(--atlas-paper-soft)",
+                    deeper: "var(--atlas-paper-deeper)",
                 },
                 ink: {
-                    DEFAULT: "#1C1917",
-                    soft: "#44403C",
-                    muted: "#78716C",
+                    DEFAULT: "var(--atlas-ink)",
+                    soft: "var(--atlas-ink-soft)",
+                    muted: "var(--atlas-ink-muted)",
                 },
                 forest: {
-                    DEFAULT: "#2F3E35",
-                    soft: "#4A5C50",
+                    DEFAULT: "var(--atlas-forest)",
+                    soft: "var(--atlas-forest-soft)",
                 },
                 terracotta: {
-                    DEFAULT: "#C8795A",
-                    soft: "#D89A82",
+                    DEFAULT: "var(--atlas-terracotta)",
                 },
-                sage: "#8A9A86",
-                line: "#D6D1C4",
+                sage: "var(--atlas-sage)",
+                line: "var(--atlas-line)",
 
                 background: "hsl(var(--background))",
                 foreground: "hsl(var(--foreground))",

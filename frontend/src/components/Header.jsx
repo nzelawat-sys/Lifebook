@@ -1,16 +1,26 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { Compass, MagnifyingGlass, Sparkle, SignOut } from "@phosphor-icons/react";
+import { useTheme } from "../contexts/ThemeContext";
+import {
+    Compass,
+    MagnifyingGlass,
+    Sparkle,
+    SignOut,
+    Sun,
+    MoonStars,
+} from "@phosphor-icons/react";
 
 export default function Header() {
     const { user, logout } = useAuth();
+    const { theme, toggle } = useTheme();
     const navigate = useNavigate();
     const location = useLocation();
 
     if (!user) return null;
 
     const navLink = (to, label, testid) => {
-        const active = location.pathname === to ||
+        const active =
+            location.pathname === to ||
             (to !== "/" && location.pathname.startsWith(to));
         return (
             <Link
@@ -27,10 +37,14 @@ export default function Header() {
     return (
         <header
             data-testid="atlas-header"
-            className="sticky top-0 z-40 backdrop-blur-xl bg-paper/80 border-b border-line"
+            className="atlas-header sticky top-0 z-40 backdrop-blur-xl border-b border-line"
         >
             <div className="max-w-7xl mx-auto flex items-center justify-between px-6 lg:px-12 py-5">
-                <Link to="/" data-testid="logo-link" className="flex items-center gap-2 group">
+                <Link
+                    to="/"
+                    data-testid="logo-link"
+                    className="flex items-center gap-2 group"
+                >
                     <Compass size={22} weight="thin" className="text-forest" />
                     <span className="font-display text-2xl tracking-tight text-ink">
                         Atlas
@@ -44,6 +58,19 @@ export default function Header() {
                 </nav>
 
                 <div className="flex items-center gap-4">
+                    <button
+                        data-testid="theme-toggle-btn"
+                        onClick={toggle}
+                        className="text-ink-muted hover:text-forest transition-colors"
+                        aria-label="Toggle theme"
+                        title={theme === "dark" ? "Switch to light" : "Switch to dark"}
+                    >
+                        {theme === "dark" ? (
+                            <Sun size={20} weight="thin" />
+                        ) : (
+                            <MoonStars size={20} weight="thin" />
+                        )}
+                    </button>
                     <button
                         data-testid="header-search-btn"
                         onClick={() => navigate("/search")}

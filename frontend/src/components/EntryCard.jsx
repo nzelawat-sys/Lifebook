@@ -2,10 +2,11 @@ import { useState } from "react";
 import { api } from "../lib/api";
 import { toast } from "sonner";
 import { Sparkle, ClockCounterClockwise } from "@phosphor-icons/react";
+import SimpleRichEditor from "./SimpleRichEditor";
 
 /**
- * EntryCard — a single Q&A prompt within a category section.
- * Auto-saves on blur; shows version & history; AI suggest.
+ * EntryCard — Q&A prompt with rich-text editor, autosave on blur,
+ * AI suggest, and version history.
  */
 export default function EntryCard({ entry, categorySlug, onUpdate }) {
     const [answer, setAnswer] = useState(entry.answer || "");
@@ -14,14 +15,15 @@ export default function EntryCard({ entry, categorySlug, onUpdate }) {
     const [historyOpen, setHistoryOpen] = useState(false);
     const [history, setHistory] = useState([]);
 
-    const save = async () => {
-        if (answer === entry.answer) return;
+    const save = async (current) => {
+        const value = current ?? answer;
+        if (value === entry.answer) return;
         setSaving(true);
         try {
-            const r = await api.put(`/entries/${entry.id}`, { answer });
+            const r = await api.put(`/entries/${entry.id}`, { answer: value });
             onUpdate(r.data);
             toast.success("Saved");
-        } catch (e) {
+        } catch {
             toast.error("Could not save");
         } finally {
             setSaving(false);
@@ -37,12 +39,10 @@ export default function EntryCard({ entry, categorySlug, onUpdate }) {
                 question: entry.question,
             });
             const suggestion = r.data.suggestion || "";
-            // Append rather than overwrite, so user keeps any draft
-            setAnswer((prev) =>
-                prev ? `${prev}\n\n${suggestion}` : suggestion
-            );
+            const formatted = `<p><em>${escape(suggestion).replace(/\n+/g, "</em></p><p><em>")}</em></p>`;
+            setAnswer((prev) => (prev ? `${prev}${formatted}` : formatted));
             toast.success("AI draft added — edit it as your own");
-        } catch (e) {
+        } catch {
             toast.error("AI suggestion failed");
         } finally {
             setAiBusy(false);
@@ -58,7 +58,7 @@ export default function EntryCard({ entry, categorySlug, onUpdate }) {
             const r = await api.get(`/entries/${entry.id}/history`);
             setHistory(r.data);
             setHistoryOpen(true);
-        } catch (e) {
+        } catch {
             toast.error("Could not load history");
         }
     };
@@ -94,24 +94,26 @@ export default function EntryCard({ entry, categorySlug, onUpdate }) {
                 </div>
             </div>
 
-            <textarea
-                data-testid={`entry-textarea-${entry.id}`}
-                className="atlas-input mt-4 min-h-[80px] text-base leading-relaxed"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                onBlur={save}
-                placeholder="Begin here…"
-                rows={3}
-            />
+            <div className="mt-4">
+                <SimpleRichEditor
+                    testId={`entry-editor-${entry.id}`}
+                    value={answer}
+                    onChange={setAnswer}
+                    onBlur={(v) => save(v)}
+                    placeholder="Begin here…"
+                />
+            </div>
 
             <div className="mt-2 flex items-center justify-between">
                 <p className="tracking-eyebrow text-ink-muted">
-                    {saving ? "Saving…" : `v${entry.version} · ${new Date(entry.updated_at).toLocaleDateString()}`}
+                    {saving
+                        ? "Saving…"
+                        : `v${entry.version} · ${new Date(entry.updated_at).toLocaleDateString()}`}
                 </p>
                 {answer !== entry.answer && (
                     <button
                         data-testid={`save-btn-${entry.id}`}
-                        onClick={save}
+                        onClick={() => save()}
                         className="tracking-eyebrow text-forest hover:text-terracotta transition-colors"
                     >
                         Save
@@ -137,11 +139,15 @@ export default function EntryCard({ entry, categorySlug, onUpdate }) {
                                     className="text-sm text-ink-soft border-l-2 border-line pl-3"
                                 >
                                     <p className="tracking-eyebrow text-ink-muted">
-                                        v{h.version} · {new Date(h.changed_at).toLocaleString()}
+                                        v{h.version} ·{" "}
+                                        {new Date(h.changed_at).toLocaleString()}
                                     </p>
-                                    <p className="mt-1 italic whitespace-pre-wrap">
-                                        {h.answer || "(empty)"}
-                                    </p>
+                                    <div
+                                        className="prose-atlas mt-1 italic"
+                                        dangerouslySetInnerHTML={{
+                                            __html: h.answer || "<p>(empty)</p>",
+                                        }}
+                                    />
                                 </li>
                             ))}
                         </ul>
@@ -150,4 +156,11 @@ export default function EntryCard({ entry, categorySlug, onUpdate }) {
             )}
         </div>
     );
+}
+
+function escape(s) {
+    return (s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 }

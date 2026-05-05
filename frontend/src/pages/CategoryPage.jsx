@@ -271,6 +271,7 @@ export default function CategoryPage() {
                                 categorySlug={slug}
                                 quotes={quotes}
                                 setQuotes={setQuotes}
+                                seedQuotes={data.seed_quotes || []}
                             />
                         </div>
                     </div>
@@ -288,6 +289,7 @@ export default function CategoryPage() {
                                 categorySlug={slug}
                                 images={images}
                                 setImages={setImages}
+                                seedImages={data.seed_images || []}
                             />
                         </div>
                     </div>

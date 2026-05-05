@@ -12,13 +12,16 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
+from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
+from fastapi.security import HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 
 from auth import (
+    bearer_scheme,
     create_token,
+    decode_token,
     get_current_user_id,
     hash_password,
     verify_password,
@@ -29,6 +32,7 @@ from ai_service import (
     suggest_answer,
 )
 from seed_data import CATEGORIES, SECTION_LABELS, default_section_questions
+from storage import get_object, init_storage, make_path, put_object
 
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -156,7 +160,8 @@ class QuoteOut(QuoteIn):
 
 class ImageIn(_Base):
     category_slug: str
-    url: str
+    url: str = ""
+    storage_path: str = ""
     caption: str = ""
 
 
@@ -201,15 +206,29 @@ def _category_meta(slug: str) -> dict:
 
 
 async def _ensure_user_seeded(user_id: str):
-    """Ensure user has the default seed entries (questions only, blank answers)."""
-    existing = await db.entries.count_documents({"user_id": user_id})
-    if existing > 0:
-        return
+    """Make sure user has every default question seeded.
+
+    Idempotent and additive: if we add new default prompts later (or enrich
+    a category like Financial), every existing user picks up the new
+    prompts on their next request without losing their existing answers.
+    """
+    # Build set of (category_slug, section, question) the user already has
+    cursor = db.entries.find(
+        {"user_id": user_id},
+        {"_id": 0, "category_slug": 1, "section": 1, "question": 1},
+    )
+    existing = {
+        (e["category_slug"], e["section"], e["question"])
+        async for e in cursor
+    }
+
     docs = []
     for c in CATEGORIES:
         qs = default_section_questions(c["slug"])
         for section, questions in qs.items():
             for q in questions:
+                if (c["slug"], section, q) in existing:
+                    continue
                 docs.append(
                     {
                         "id": _new_id(),
@@ -318,13 +337,20 @@ async def get_category(slug: str, user_id: str = Depends(get_current_user_id)):
     sections = {k: [] for k in SECTION_LABELS.keys()}
     for e in entries:
         sections.setdefault(e["section"], []).append(e)
-    # Stable order
-    for s in sections:
-        sections[s].sort(key=lambda x: x.get("question", ""))
+    # Preserve seed-question order so prompts always appear in the same order.
+    section_order_map = default_section_questions(slug)
+    for s, qs in section_order_map.items():
+        order = {q: i for i, q in enumerate(qs)}
+        sections[s] = sorted(
+            sections.get(s, []),
+            key=lambda x: order.get(x.get("question", ""), 999),
+        )
     return {
         "category": meta,
         "section_labels": SECTION_LABELS,
         "sections": sections,
+        "seed_quotes": meta.get("seed_quotes", []),
+        "seed_images": meta.get("seed_images", []),
     }
 
 
@@ -685,11 +711,95 @@ async def list_insights(user_id: str = Depends(get_current_user_id)):
 
 
 # ---------------------------------------------------------------------------
+# Object storage — upload / download
+# ---------------------------------------------------------------------------
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_UPLOAD_BYTES = 8 * 1024 * 1024  # 8MB
+
+
+@api.post("/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id),
+):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(400, f"Unsupported type: {file.content_type}")
+    data = await file.read()
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(400, "File too large (max 8MB)")
+    path = make_path(user_id, file.filename or "upload.bin")
+    try:
+        result = put_object(path, data, file.content_type)
+    except Exception as e:
+        logger.exception("Upload failed")
+        raise HTTPException(500, "Upload failed") from e
+
+    record = {
+        "id": _new_id(),
+        "user_id": user_id,
+        "storage_path": result["path"],
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "size": result.get("size", len(data)),
+        "is_deleted": False,
+        "created_at": _now_iso(),
+    }
+    await db.uploaded_files.insert_one(dict(record))
+    record.pop("_id", None)
+    return {
+        "id": record["id"],
+        "storage_path": record["storage_path"],
+        "url": f"/api/files/{record['storage_path']}",
+        "size": record["size"],
+        "content_type": record["content_type"],
+    }
+
+
+@api.get("/files/{path:path}")
+async def download_file(path: str, auth: Optional[str] = Query(None)):
+    """Serve uploaded files. Supports query-param token because <img src=...>
+    cannot send Authorization headers. Tokens are short-scope JWT only."""
+    if not auth:
+        raise HTTPException(401, "Auth token required")
+    payload = decode_token(auth)
+    if not payload or "sub" not in payload:
+        raise HTTPException(401, "Invalid token")
+    user_id = payload["sub"]
+    rec = await db.uploaded_files.find_one(
+        {"storage_path": path, "user_id": user_id, "is_deleted": False},
+        {"_id": 0},
+    )
+    if not rec:
+        raise HTTPException(404, "File not found")
+    try:
+        data, content_type = get_object(path)
+    except Exception as e:
+        logger.exception("Download failed")
+        raise HTTPException(500, "Download failed") from e
+    return Response(
+        content=data,
+        media_type=rec.get("content_type", content_type),
+        headers={"Cache-Control": "private, max-age=86400"},
+    )
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 @api.get("/")
 async def root():
     return {"app": "Atlas — Personal Lifebook", "ok": True}
+
+
+@app.on_event("startup")
+async def startup():
+    try:
+        if init_storage():
+            logger.info("Object storage initialized")
+        else:
+            logger.warning("Object storage not initialized — EMERGENT_LLM_KEY missing")
+    except Exception as e:
+        logger.warning("Object storage init failed: %s", e)
 
 
 app.include_router(api)

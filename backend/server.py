@@ -33,6 +33,7 @@ from ai_service import (
 )
 from seed_data import CATEGORIES, SECTION_LABELS, default_section_questions
 from storage import get_object, init_storage, make_path, put_object
+from import_service import VALID_TYPES, classify_text, extract_text_from_upload
 
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -193,6 +194,31 @@ class SuggestIn(_Base):
     category_slug: str
     section: str
     question: str
+
+
+class ImportAnalyzeIn(_Base):
+    category_slug: str
+    text: str
+
+
+class ImportItem(_Base):
+    id: str
+    type: str
+    text: str
+    confidence: float = 0.7
+    # Optional overrides on commit:
+    section: Optional[str] = None  # for premise/purpose/vision/strategy
+    author: Optional[str] = None   # for quote
+    question: Optional[str] = None  # which prompt to attach the text to
+
+
+class ImportCommitIn(_Base):
+    category_slug: str
+    items: List[ImportItem]
+
+
+class ReorderIn(_Base):
+    ids: List[str]
 
 
 # ---------------------------------------------------------------------------
@@ -550,7 +576,11 @@ async def list_quotes(
     q = {"user_id": user_id}
     if category_slug:
         q["category_slug"] = category_slug
-    items = await db.quotes.find(q, {"_id": 0}).sort("created_at", -1).to_list(500)
+    items = (
+        await db.quotes.find(q, {"_id": 0})
+        .sort([("display_order", 1), ("created_at", -1)])
+        .to_list(500)
+    )
     return items
 
 
@@ -581,7 +611,11 @@ async def list_images(
     q = {"user_id": user_id}
     if category_slug:
         q["category_slug"] = category_slug
-    items = await db.images.find(q, {"_id": 0}).sort("created_at", -1).to_list(500)
+    items = (
+        await db.images.find(q, {"_id": 0})
+        .sort([("display_order", 1), ("created_at", -1)])
+        .to_list(500)
+    )
     return items
 
 
@@ -708,6 +742,150 @@ async def list_insights(user_id: str = Depends(get_current_user_id)):
         "created_at", -1
     ).to_list(50)
     return items
+
+
+# ---------------------------------------------------------------------------
+# Smart Import — paste/upload text → AI classifies → user confirms → commit
+# ---------------------------------------------------------------------------
+ALLOWED_IMPORT_TYPES = {
+    "text/plain",
+    "text/markdown",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/octet-stream",
+}
+MAX_IMPORT_BYTES = 4 * 1024 * 1024  # 4MB raw upload
+
+
+@api.post("/import/upload-text")
+async def import_upload_text(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id),
+):
+    """Extract plain text from an uploaded document so the client can pass it to /import/analyze."""
+    data = await file.read()
+    if len(data) > MAX_IMPORT_BYTES:
+        raise HTTPException(400, "File too large (max 4MB)")
+    try:
+        text = extract_text_from_upload(file.filename or "", file.content_type or "", data)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"text": text[:50000], "filename": file.filename}
+
+
+@api.post("/import/analyze")
+async def import_analyze(
+    body: ImportAnalyzeIn, user_id: str = Depends(get_current_user_id)
+):
+    cat = _category_meta(body.category_slug)
+    text = (body.text or "").strip()
+    if not text:
+        raise HTTPException(400, "Empty text")
+    items = await classify_text(cat["name"], text)
+    return {"items": items}
+
+
+@api.post("/import/commit")
+async def import_commit(
+    body: ImportCommitIn, user_id: str = Depends(get_current_user_id)
+):
+    cat = _category_meta(body.category_slug)
+    summary = {"entries": 0, "goals": 0, "commitments": 0, "quotes": 0}
+
+    for it in body.items:
+        if it.type not in VALID_TYPES:
+            continue
+        if it.type in {"premise", "purpose", "vision", "strategy"}:
+            section = it.section or it.type
+            question = it.question or "Imported reflection"
+            answer_html = f"<p>{_html_escape(it.text)}</p>"
+            doc = {
+                "id": _new_id(),
+                "user_id": user_id,
+                "category_slug": cat["slug"],
+                "section": section,
+                "question": question,
+                "answer": answer_html,
+                "version": 1,
+                "updated_at": _now_iso(),
+            }
+            await db.entries.insert_one(dict(doc))
+            summary["entries"] += 1
+        elif it.type == "goal":
+            doc = {
+                "id": _new_id(),
+                "user_id": user_id,
+                "category_slug": cat["slug"],
+                "title": it.text,
+                "notes": "",
+                "status": "active",
+                "created_at": _now_iso(),
+                "updated_at": _now_iso(),
+            }
+            await db.goals.insert_one(dict(doc))
+            summary["goals"] += 1
+        elif it.type == "commitment":
+            doc = {
+                "id": _new_id(),
+                "user_id": user_id,
+                "category_slug": cat["slug"],
+                "text": it.text,
+                "status": "open",
+                "created_at": _now_iso(),
+            }
+            await db.commitments.insert_one(dict(doc))
+            summary["commitments"] += 1
+        elif it.type == "quote":
+            text = it.text
+            author = it.author or ""
+            # Try to split "..." — author from a single string
+            if not author and "—" in text:
+                parts = text.rsplit("—", 1)
+                if len(parts) == 2:
+                    text = parts[0].strip().strip('"').strip()
+                    author = parts[1].strip()
+            doc = {
+                "id": _new_id(),
+                "user_id": user_id,
+                "category_slug": cat["slug"],
+                "text": text.strip('"'),
+                "author": author,
+                "created_at": _now_iso(),
+            }
+            await db.quotes.insert_one(dict(doc))
+            summary["quotes"] += 1
+    return summary
+
+
+def _html_escape(s: str) -> str:
+    return (
+        (s or "")
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
+# ---------------------------------------------------------------------------
+# Drag-and-drop reorder for quotes & images
+# ---------------------------------------------------------------------------
+@api.post("/quotes/reorder")
+async def reorder_quotes(body: ReorderIn, user_id: str = Depends(get_current_user_id)):
+    for idx, qid in enumerate(body.ids):
+        await db.quotes.update_one(
+            {"id": qid, "user_id": user_id}, {"$set": {"display_order": idx}}
+        )
+    return {"ok": True}
+
+
+@api.post("/images/reorder")
+async def reorder_images(body: ReorderIn, user_id: str = Depends(get_current_user_id)):
+    for idx, iid in enumerate(body.ids):
+        await db.images.update_one(
+            {"id": iid, "user_id": user_id}, {"$set": {"display_order": idx}}
+        )
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------

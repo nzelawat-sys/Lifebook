@@ -6,12 +6,15 @@ import GoalsSection from "../components/GoalsSection";
 import CommitmentsSection from "../components/CommitmentsSection";
 import QuotesSection from "../components/QuotesSection";
 import GallerySection from "../components/GallerySection";
+import OverviewTab from "../components/OverviewTab";
+import ImportModal from "../components/ImportModal";
 import { toast } from "sonner";
-import { ArrowLeft, Sparkle } from "@phosphor-icons/react";
+import { ArrowLeft, Sparkle, Plus } from "@phosphor-icons/react";
 import ReactMarkdown from "../lib/markdown";
 
 const SECTION_ORDER = ["premise", "purpose", "vision", "strategy"];
 const VIEW_TABS = [
+    { id: "overview", label: "Overview" },
     { id: "sections", label: "Reflections" },
     { id: "goals", label: "Goals" },
     { id: "commitments", label: "Commitments" },
@@ -23,7 +26,7 @@ const VIEW_TABS = [
 export default function CategoryPage() {
     const { slug } = useParams();
     const [data, setData] = useState(null);
-    const [activeView, setActiveView] = useState("sections");
+    const [activeView, setActiveView] = useState("overview");
     const [activeSection, setActiveSection] = useState("premise");
     const [goals, setGoals] = useState([]);
     const [commitments, setCommitments] = useState([]);
@@ -31,26 +34,50 @@ export default function CategoryPage() {
     const [images, setImages] = useState([]);
     const [reflections, setReflections] = useState([]);
     const [reflectBusy, setReflectBusy] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
+
+    const reload = async () => {
+        const [cat, g, c, q, im, r] = await Promise.all([
+            api.get(`/categories/${slug}`),
+            api.get(`/goals?category_slug=${slug}`),
+            api.get(`/commitments?category_slug=${slug}`),
+            api.get(`/quotes?category_slug=${slug}`),
+            api.get(`/images?category_slug=${slug}`),
+            api.get(`/reflections?category_slug=${slug}`),
+        ]);
+        setData(cat.data);
+        setGoals(g.data);
+        setCommitments(c.data);
+        setQuotes(q.data);
+        setImages(im.data);
+        setReflections(r.data);
+    };
 
     useEffect(() => {
-        const load = async () => {
-            const [cat, g, c, q, im, r] = await Promise.all([
-                api.get(`/categories/${slug}`),
-                api.get(`/goals?category_slug=${slug}`),
-                api.get(`/commitments?category_slug=${slug}`),
-                api.get(`/quotes?category_slug=${slug}`),
-                api.get(`/images?category_slug=${slug}`),
-                api.get(`/reflections?category_slug=${slug}`),
-            ]);
-            setData(cat.data);
-            setGoals(g.data);
-            setCommitments(c.data);
-            setQuotes(q.data);
-            setImages(im.data);
-            setReflections(r.data);
-        };
-        load();
+        setActiveView("overview");
+        reload();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [slug]);
+
+    const reorderQuotes = async (ids) => {
+        const map = new Map(quotes.map((x) => [x.id, x]));
+        setQuotes(ids.map((id) => map.get(id)).filter(Boolean));
+        try {
+            await api.post("/quotes/reorder", { ids });
+        } catch {
+            toast.error("Could not save order");
+        }
+    };
+
+    const reorderImages = async (ids) => {
+        const map = new Map(images.map((x) => [x.id, x]));
+        setImages(ids.map((id) => map.get(id)).filter(Boolean));
+        try {
+            await api.post("/images/reorder", { ids });
+        } catch {
+            toast.error("Could not save order");
+        }
+    };
 
     const updateEntry = (updated) => {
         setData((prev) => {
@@ -153,21 +180,49 @@ export default function CategoryPage() {
                             {t.label}
                         </button>
                     ))}
-                    <button
-                        data-testid="generate-reflection-btn"
-                        onClick={generateReflection}
-                        disabled={reflectBusy}
-                        className="ml-auto inline-flex items-center gap-1.5 text-terracotta hover:text-forest transition-colors disabled:opacity-50"
-                    >
-                        <Sparkle size={16} weight="thin" />
-                        <span className="tracking-eyebrow">
-                            {reflectBusy ? "Reflecting…" : "Generate reflection"}
-                        </span>
-                    </button>
+                    <div className="ml-auto flex items-center gap-5">
+                        <button
+                            data-testid="open-import-btn"
+                            onClick={() => setImportOpen(true)}
+                            className="inline-flex items-center gap-1.5 text-forest hover:text-terracotta transition-colors"
+                            title="Import notes / docs"
+                        >
+                            <Plus size={16} weight="thin" />
+                            <span className="tracking-eyebrow">Smart import</span>
+                        </button>
+                        <button
+                            data-testid="generate-reflection-btn"
+                            onClick={generateReflection}
+                            disabled={reflectBusy}
+                            className="inline-flex items-center gap-1.5 text-terracotta hover:text-forest transition-colors disabled:opacity-50"
+                        >
+                            <Sparkle size={16} weight="thin" />
+                            <span className="tracking-eyebrow">
+                                {reflectBusy ? "Reflecting…" : "Generate reflection"}
+                            </span>
+                        </button>
+                    </div>
                 </div>
             </section>
 
             <section className="max-w-7xl mx-auto px-6 lg:px-12 py-10 lg:py-14">
+                {activeView === "overview" && (
+                    <OverviewTab
+                        category={cat}
+                        sections={data.sections}
+                        seedQuotes={data.seed_quotes || []}
+                        seedImages={data.seed_images || []}
+                        quotes={quotes}
+                        images={images}
+                        goals={goals}
+                        commitments={commitments}
+                        reflections={reflections}
+                        onReorderQuotes={reorderQuotes}
+                        onReorderImages={reorderImages}
+                        onGenerateReflection={generateReflection}
+                        reflectBusy={reflectBusy}
+                    />
+                )}
                 {activeView === "sections" && (
                     <div className="grid lg:grid-cols-[220px_1fr] gap-10 lg:gap-16">
                         {/* Section sidebar */}
@@ -328,6 +383,15 @@ export default function CategoryPage() {
                     </div>
                 )}
             </section>
+
+            {importOpen && (
+                <ImportModal
+                    categorySlug={slug}
+                    categoryName={cat.name}
+                    onClose={() => setImportOpen(false)}
+                    onCommitted={() => reload()}
+                />
+            )}
         </div>
     );
 }

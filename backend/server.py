@@ -798,7 +798,11 @@ async def import_commit(
             continue
         if it.type in {"premise", "purpose", "vision", "strategy"}:
             section = it.section or it.type
-            question = it.question or "Imported reflection"
+            # Auto-derive a unique short title from the text if no explicit question
+            default_q = it.text.strip()
+            if len(default_q) > 60:
+                default_q = default_q[:57].rsplit(" ", 1)[0] + "…"
+            question = it.question or default_q or "Imported reflection"
             answer_html = f"<p>{_html_escape(it.text)}</p>"
             doc = {
                 "id": _new_id(),

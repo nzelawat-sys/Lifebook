@@ -35,6 +35,14 @@ User wanted a deeply personal "My Life Book" web app — a private, beautiful pl
 - ✅ Editorial design: Cormorant Garamond + Manrope, paper grain, sunset hero, bento grid of 12 chapters with custom image + accent color per category.
 - ✅ Backend tested: 22/22 pytest cases passing including 3 real Claude calls.
 
+## What's Implemented — Iteration 3 (2026-02-05 PM2)
+- ✅ **Smart Import** — paste any text or upload `.txt/.md/.pdf/.docx`. Claude classifies each idea into one of 7 types (premise/purpose/vision/strategy/goal/commitment/quote) with a confidence score. User reviews each item in a magazine-style modal (color-coded type pills, inline edit, type dropdown, individual remove), then confirms — items are saved into the right places (entries/goals/commitments/quotes) automatically.
+- ✅ **Lenient JSON parser** — survives Claude's occasional unescaped-quote payloads (real-world bug found and patched).
+- ✅ **Overview tab** — now the default landing per category. Shows the latest AI reflection at top, followed by all curated + user quotes in a 3-col masonry, photographs in a 4-col strip, and goal/commitment mini-cards. "Refresh" button to regenerate the reflection from the same place.
+- ✅ **Drag-and-drop reorder** for both quotes and images, persisted to backend via /api/quotes/reorder and /api/images/reorder.
+- ✅ **Auto-derived prompt titles** for imported reflections — first 60 chars become the section question instead of all imports stacking under "Imported reflection".
+- ✅ Backend tested: **47/47 pytest** (22 baseline + 13 iter-2 + 12 iter-3), 100% passing.
+
 ## What's Implemented — Iteration 2 (2026-02-05 PM)
 - ✅ **Rich text editor** for entries — bold / italic / H2 / H3 / lists / blockquote, contenteditable-based, no extra deps. Auto-saves HTML on blur.
 - ✅ **Object storage upload** via Emergent Object Storage. `/api/upload` + `/api/files/{path}?auth=token` with per-user data isolation, 8MB cap, image-only.

@@ -173,6 +173,8 @@ table.t tfoot td { border-top: 1px solid var(--border); font-weight: 600; backgr
      { fills|trades|data: [...], prices: {SYMBOL: cmp}, candles: {SYMBOL: [{time,open,high,low,close}]} }
    ========================================================================== */
 const SEED_DATA = null;
+// When there is no SEED_DATA, open with made-up sample trades so every tab has something to show.
+const LOAD_SAMPLE_ON_START = true;
 
 const { useState, useMemo, useEffect, useRef, useCallback, Fragment } = React;
 const {
@@ -1886,6 +1888,7 @@ function App() {
     setSettings((st) => ({ ...st, startCapital: st.startCapital || '1000000', startDate: st.startDate || '2025-10-01',
       flows: st.flows.length ? st.flows : [{ id: uid(), date: '2025-10-01', amount: '1000000', type: 'Pay-in' }, { id: uid(), date: '2026-03-02', amount: '250000', type: 'Pay-in' }, { id: uid(), date: '2026-07-15', amount: '150000', type: 'Payout' }] }));
   };
+  useEffect(() => { if (LOAD_SAMPLE_ON_START && !SEED_DATA) loadSample(); }, []);
 
   // global drag-drop
   useEffect(() => {
@@ -1963,7 +1966,7 @@ function App() {
           </div>
           <DataSourceBar stats={stats} sources={chips} onRemove={removeSource} onUpload={addFiles} onApi={() => setPanel('api')} onMapping={() => setPanel('columns')} />
           {toast && <div className={'note ' + (toast.kind === 'err' ? 'err' : 'ok')}>{toast.msg}</div>}
-          {sources.some((s) => s.kind === 'sample') && <div className="note info">Showing <b>sample data</b> (made-up example trades). Remove the “Sample data” chip and upload your own CSV to replace it.</div>}
+          {sources.some((s) => s.kind === 'sample') && <div className="note info">Showing <b>sample data</b> (made-up example trades). Remove the “Sample data” chip (×) and upload your own CSV to replace it.</div>}
           {!hasData && tab !== 'journal' ? (
             <EmptyState onFiles={addFiles} apiCfg={apiCfg} setApiCfg={setApiCfg} onFetched={onFetched} onSample={loadSample} onReadNamed={readNamed} />
           ) : (

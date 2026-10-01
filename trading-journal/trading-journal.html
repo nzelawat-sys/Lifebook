@@ -1,0 +1,1999 @@
+<title>Trade Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: fixed left rail (desktop) / bottom nav (mobile) + scrolling work area; dark neon first, light via toggle */
+:root {
+  --bg:#0A0A0F; --card:#0D0D12; --card-2:#13131A; --border:#27272A; --text:#EDEDED; --muted:#A1A1AA;
+  --accent:#00F0FF; --accent-soft:rgba(0,240,255,.12); --pos:#34D399; --neg:#F87171; --warn:#FBBF24;
+  --pos-soft:rgba(52,211,153,.12); --neg-soft:rgba(248,113,113,.12); --warn-soft:rgba(251,191,36,.12);
+  --c1:#00F0FF; --c2:#A78BFA; --c3:#34D399; --c4:#FBBF24; --c5:#F472B6; --c6:#60A5FA; --c7:#FB923C; --c8:#94A3B8;
+  --glow:0 0 0 1px rgba(0,240,255,.35), 0 0 18px rgba(0,240,255,.18);
+  --f-display:"Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:12px; --r-sm:8px;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg:#F4F6F8; --card:#FFFFFF; --card-2:#F1F3F6; --border:#DDE1E6; --text:#15171C; --muted:#5B6270;
+  --accent:#0891B2; --accent-soft:rgba(8,145,178,.10); --pos:#059669; --neg:#DC2626; --warn:#B45309;
+  --pos-soft:rgba(5,150,105,.10); --neg-soft:rgba(220,38,38,.09); --warn-soft:rgba(180,83,9,.10);
+  --c1:#0891B2; --c2:#7C3AED; --c3:#059669; --c4:#D97706; --c5:#DB2777; --c6:#2563EB; --c7:#EA580C; --c8:#64748B;
+  --glow:0 0 0 1px rgba(8,145,178,.35); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg:#F4F6F8; --card:#FFFFFF; --card-2:#F1F3F6; --border:#DDE1E6; --text:#15171C; --muted:#5B6270;
+  --accent:#0891B2; --accent-soft:rgba(8,145,178,.10); --pos:#059669; --neg:#DC2626; --warn:#B45309;
+  --pos-soft:rgba(5,150,105,.10); --neg-soft:rgba(220,38,38,.09); --warn-soft:rgba(180,83,9,.10);
+  --c1:#0891B2; --c2:#7C3AED; --c3:#059669; --c4:#D97706; --c5:#DB2777; --c6:#2563EB; --c7:#EA580C; --c8:#64748B;
+  --glow:0 0 0 1px rgba(8,145,178,.35); color-scheme: light; }
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--f-body); font-size: 14px; line-height: 1.45; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num, td.n, .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { font-family: var(--f-display); letter-spacing: .02em; margin: 0; text-wrap: balance; }
+h2 { font-size: 18px; } h3 { font-size: 15px; font-weight: 600; }
+.muted { color: var(--muted); } .pos { color: var(--pos); } .neg { color: var(--neg); } .warn { color: var(--warn); } .acc { color: var(--accent); }
+.small { font-size: 12px; } .tiny { font-size: 11px; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+#root { min-height: 100%; }
+.app { display: grid; grid-template-columns: 220px minmax(0,1fr); min-height: 100vh; }
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); height: 100vh; border-right: 1px solid var(--border); background: var(--card); padding: 20px 12px; display: flex; flex-direction: column; gap: 6px; }
+.brand { font-family: var(--f-display); font-weight: 700; font-size: 20px; padding: 4px 10px 18px; display: flex; gap: 8px; align-items: center; }
+.brand b { color: var(--accent); text-shadow: 0 0 12px var(--accent-soft); }
+.navbtn { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--r-sm); border: 1px solid transparent; background: none; cursor: pointer; color: var(--muted); text-align: left; }
+.navbtn:hover { color: var(--text); background: var(--card-2); }
+.navbtn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); box-shadow: var(--glow); }
+.rail .spacer { flex: 1; }
+.main { min-width: 0; padding-block: 18px 40px; padding-inline: 24px; display: flex; flex-direction: column; gap: 18px; }
+.bottomnav { display: none; }
+.topbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+.topbar .title { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; min-width: 0; }
+.card.tight { padding: 12px; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.kpi .v { font-family: var(--f-mono); font-size: 19px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .h { font-size: 11px; color: var(--muted); }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--card-2); cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: #031417; border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { box-shadow: var(--glow); }
+.btn.ghost { background: none; }
+.btn.sm { padding: 4px 8px; font-size: 12px; }
+.btn.danger:hover { border-color: var(--neg); color: var(--neg); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.iconbtn { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--card-2); cursor: pointer; }
+.iconbtn:hover { border-color: var(--accent); color: var(--accent); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); font-size: 12px; background: var(--card-2); white-space: nowrap; }
+.chip .x { cursor: pointer; opacity: .7; display: inline-grid; } .chip .x:hover { opacity: 1; color: var(--neg); }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: .03em; }
+.pill.open { background: var(--accent-soft); color: var(--accent); }
+.pill.closed { background: var(--card-2); color: var(--muted); border: 1px solid var(--border); }
+.pill.partial { background: var(--warn-soft); color: var(--warn); }
+.pill.fast { background: var(--pos-soft); color: var(--pos); } .pill.early { background: var(--accent-soft); color: var(--accent); }
+.pill.steady { background: var(--card-2); color: var(--text); border: 1px solid var(--border); } .pill.stuck { background: var(--neg-soft); color: var(--neg); }
+.pill.buy { background: var(--pos-soft); color: var(--pos); } .pill.sell { background: var(--neg-soft); color: var(--neg); }
+
+input.f, select.f, textarea.f { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 9px; min-width: 0; width: 100%; }
+input.f:focus, select.f:focus, textarea.f:focus { border-color: var(--accent); outline: none; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.formgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r); background: var(--card); }
+table.t { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.t th { position: sticky; top: 0; background: var(--card-2); text-align: left; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 9px 10px; white-space: nowrap; border-bottom: 1px solid var(--border); cursor: default; user-select: none; }
+table.t th.sortable { cursor: pointer; } table.t th.sortable:hover { color: var(--text); }
+table.t th.n, table.t td.n { text-align: right; }
+table.t td { padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.t tr:last-child td { border-bottom: none; }
+table.t tbody tr.click { cursor: pointer; } table.t tbody tr.click:hover td { background: var(--card-2); }
+table.t tr.sub td { background: var(--bg); font-size: 12px; }
+table.t tfoot td { border-top: 1px solid var(--border); font-weight: 600; background: var(--card-2); }
+
+.empty { border: 1px dashed var(--border); border-radius: var(--r); padding: 28px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.drop { border: 1.5px dashed var(--border); border-radius: var(--r); padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.dropveil { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: grid; place-items: center; z-index: 60; pointer-events: none; }
+.dropveil div { border: 2px dashed var(--accent); border-radius: 16px; padding: 40px 60px; font-family: var(--f-display); font-size: 22px; color: var(--accent); background: var(--card); }
+
+.scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50; display: flex; justify-content: flex-end; }
+.drawer { width: min(560px, 100%); height: 100%; background: var(--card); border-left: 1px solid var(--border); padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+.drawer-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.note { border: 1px solid var(--border); border-left: 3px solid var(--warn); background: var(--warn-soft); border-radius: var(--r-sm); padding: 9px 12px; font-size: 12.5px; }
+.note.err { border-left-color: var(--neg); background: var(--neg-soft); }
+.note.ok { border-left-color: var(--pos); background: var(--pos-soft); }
+.note.info { border-left-color: var(--accent); background: var(--accent-soft); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; }
+.seg button { padding: 5px 10px; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 12px; }
+.seg button.on { background: var(--accent-soft); color: var(--accent); }
+.colpicker { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px 12px; padding: 12px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--card-2); }
+.colpicker label { display: flex; gap: 6px; align-items: center; font-size: 12.5px; cursor: pointer; }
+.chartbox { width: 100%; height: 300px; }
+.chartbox.sm { height: 230px; }
+.hcards { display: none; }
+.hcard { border: 1px solid var(--border); border-radius: var(--r); background: var(--card); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.hcard .kv { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+.kv .k { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.kv .v { font-family: var(--f-mono); font-size: 13px; }
+.cols { columns: 2 260px; column-gap: 24px; font-size: 12.5px; }
+.cols code, code { font-family: var(--f-mono); font-size: 12px; color: var(--accent); }
+.status-line { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.status-line b { color: var(--text); font-weight: 500; }
+.lwbox { width: 100%; height: 340px; }
+.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+@media (max-width: 900px) {
+  .app { grid-template-columns: minmax(0,1fr); }
+  .rail { display: none; }
+  .main { padding-inline: 16px; padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .bottomnav { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--border); z-index: 40; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .bottomnav button { background: none; border: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 7px; font-size: 10px; cursor: pointer; }
+  .bottomnav button.on { color: var(--accent); }
+  .grid2, .grid3 { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 640px) {
+  .htable { display: none; } .hcards { display: flex; flex-direction: column; gap: 10px; }
+  .kpi .v { font-size: 16px; }
+  .chartbox { height: 250px; }
+}
+</style>
+
+<div id="root"><div style="padding:40px;font-family:var(--f-mono);color:var(--muted)">Loading trade ledger…</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script>window.react = window.React;</script>
+<script src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide-react@0.383.0/dist/umd/lucide-react.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+/* ==========================================================================
+   SEED_DATA — paste JSON from your broker MCP connector here.
+   Accepted shapes:
+     [ {symbol, side, quantity, price, date, ...}, ... ]            (fills)
+     [ {symbol, side, buy_price, sell_price, entry_date, ...}, ... ] (closed trades)
+     { fills|trades|data: [...], prices: {SYMBOL: cmp}, candles: {SYMBOL: [{time,open,high,low,close}]} }
+   ========================================================================== */
+const SEED_DATA = null;
+
+const { useState, useMemo, useEffect, useRef, useCallback, Fragment } = React;
+const {
+  ResponsiveContainer, ComposedChart, BarChart, Bar, Line, Scatter, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ReferenceLine, PieChart, Pie, Cell, Legend,
+} = Recharts;
+
+/* ------------------------------------------------------------------ utils */
+const Icon = ({ name, size = 16, className }) => {
+  const C = LucideReact[name] || LucideReact.Circle;
+  return <C size={size} strokeWidth={1.75} className={className} />;
+};
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+const sum = (arr, f = (x) => x) => arr.reduce((a, x, i) => a + (f(x, i) || 0), 0);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const INR0 = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+const INR2 = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtINR = (v, dp = 0) => (!isNum(v) ? '—' : (v < 0 ? '−₹' : '₹') + (dp ? INR2 : INR0).format(Math.abs(v)));
+const fmtSigned = (v, dp = 0) => (!isNum(v) ? '—' : (v > 0 ? '+' : '') + fmtINR(v, dp));
+const fmtNum = (v, dp = 2) => (!isNum(v) ? '—' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: dp }).format(v));
+const fmtPct = (v, dp = 1) => (!isNum(v) ? '—' : (v > 0 ? '+' : '') + v.toFixed(dp) + '%');
+const toneOf = (v) => (!isNum(v) || Math.abs(v) < 1e-9 ? '' : v > 0 ? 'pos' : 'neg');
+const compactINR = (v) => {
+  if (!isNum(v)) return '—';
+  const a = Math.abs(v), s = v < 0 ? '−' : '';
+  if (a >= 1e7) return s + '₹' + (a / 1e7).toFixed(2) + 'Cr';
+  if (a >= 1e5) return s + '₹' + (a / 1e5).toFixed(2) + 'L';
+  if (a >= 1e3) return s + '₹' + (a / 1e3).toFixed(1) + 'k';
+  return s + '₹' + a.toFixed(0);
+};
+
+/* dates are kept as 'YYYY-MM-DD' strings; dayNum gives integer days for diffs */
+const pad2 = (n) => String(n).padStart(2, '0');
+const ymd = (y, m, d) => `${y}-${pad2(m)}-${pad2(d)}`;
+const dayNum = (s) => { if (!s) return NaN; const [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d) / 864e5; };
+const fromDayNum = (n) => { const d = new Date(n * 864e5); return ymd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); };
+const todayStr = () => { const d = new Date(); return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()); };
+const weekdayOf = (s) => new Date(dayNum(s) * 864e5).getUTCDay();
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12 };
+const MON3 = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const fmtDate = (s) => { if (!s) return '—'; const [y, m, d] = s.split('-'); return `${d} ${MON3[+m - 1] || m} ${y}`; };
+const fmtDateShort = (s) => { if (!s) return ''; const [y, m, d] = s.split('-'); return `${d}/${m}/${y.slice(2)}`; };
+
+/* ------------------------------------------------------- value parsers */
+function num(v) {
+  if (v === null || v === undefined || v === '') return NaN;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim();
+  let neg = false;
+  if (/^\(.*\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
+  s = s.replace(/[₹$,\s%]/g, '').replace(/^rs\.?/i, '');
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? (neg ? -n : n) : NaN;
+}
+
+function parseTime(s) {
+  const m = String(s || '').match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (!m) return '';
+  let h = +m[1];
+  if (m[4]) { const pm = m[4].toLowerCase() === 'pm'; if (pm && h < 12) h += 12; if (!pm && h === 12) h = 0; }
+  return `${pad2(h)}:${m[2]}:${m[3] || '00'}`;
+}
+
+/* returns {date:'YYYY-MM-DD', time:'HH:MM:SS'|''} or null */
+function parseDate(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number' && v > 20000 && v < 80000) return { date: fromDayNum(Math.floor(v) - 25569), time: '' }; // Excel serial
+  if (typeof v === 'number' && v > 1e11) { const d = new Date(v); return { date: ymd(d.getFullYear(), d.getMonth() + 1, d.getDate()), time: `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}` }; }
+  const s = String(v).trim();
+  let m, y, mo, d;
+  if ((m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else if ((m = s.match(/^(\d{1,2})[-\/ .]([A-Za-z]{3,9})[-\/ .,]+(\d{2,4})/))) { d = +m[1]; mo = MONTHS[m[2].slice(0, 3).toLowerCase()]; y = +m[3]; }
+  else if ((m = s.match(/^([A-Za-z]{3,9})[ -](\d{1,2}),?[ -](\d{4})/))) { mo = MONTHS[m[1].slice(0, 3).toLowerCase()]; d = +m[2]; y = +m[3]; }
+  else if ((m = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/))) {
+    d = +m[1]; mo = +m[2]; y = +m[3];
+    if (mo > 12 && d <= 12) { const t = d; d = mo; mo = t; } // clearly MM/DD
+  }
+  else return null;
+  if (y < 100) y += 2000;
+  if (!mo || mo > 12 || !d || d > 31) return null;
+  return { date: ymd(y, mo, d), time: parseTime(s.slice(m[0].length)) };
+}
+
+function parseSide(v, qtyRaw) {
+  const s = String(v ?? '').trim().toUpperCase();
+  if (['BUY', 'B', '1', 'LONG', 'BOT', 'BOUGHT', 'PURCHASE', 'P'].includes(s) || s.startsWith('BUY')) return 'BUY';
+  if (['SELL', 'S', '-1', '2', 'SHORT', 'SLD', 'SOLD', 'SALE'].includes(s) || s.startsWith('SELL')) return 'SELL';
+  if (isNum(qtyRaw) && qtyRaw < 0) return 'SELL';
+  if (isNum(qtyRaw) && qtyRaw > 0 && !s) return 'BUY';
+  return null;
+}
+
+function parseOptionType(v, symbol) {
+  const s = String(v ?? '').trim().toUpperCase();
+  if (['CE', 'CALL', 'C'].includes(s)) return 'CE';
+  if (['PE', 'PUT', 'P'].includes(s)) return 'PE';
+  const m = String(symbol || '').toUpperCase().match(/\d(CE|PE)$/);
+  return m ? m[1] : '';
+}
+
+/* ------------------------------------------------- schema / normalizer */
+const normKey = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const COMMON_FIELDS = {
+  series: ['series'],
+  exchange: ['exchange', 'exch', 'segment', 'exchangesegment', 'market'],
+  instrument_type: ['instrumenttype', 'instrtype', 'instrument_type', 'assetclass', 'securitytype'],
+  expiry: ['expiry', 'expirydate', 'exp', 'expdate'],
+  strike: ['strike', 'strikeprice', 'strk'],
+  option_type: ['optiontype', 'opttype', 'cepe', 'callput', 'right', 'optype'],
+  strategy: ['strategy', 'setup', 'tag', 'playbook', 'strategyname'],
+  sector: ['sector', 'industry'],
+  charges: ['charges', 'totalcharges', 'brokerage', 'fees', 'commission', 'taxes', 'cost'],
+  current_price: ['currentprice', 'cmp', 'ltp', 'lastprice', 'marketprice', 'lasttradedprice'],
+  prev_close: ['prevclose', 'previousclose', 'closeprice', 'yesterdayclose'],
+  stop_loss: ['stoploss', 'sl', 'stop', 'stopprice'],
+  target: ['target', 'tgt', 'targetprice'],
+  remarks: ['remarks', 'notes', 'note', 'comment', 'comments', 'journal'],
+};
+const FILL_FIELDS = {
+  symbol: ['symbol', 'tradingsymbol', 'scrip', 'scripname', 'ticker', 'instrument', 'stock', 'securityname', 'sym', 'name', 'scripcode'],
+  side: ['side', 'transactiontype', 'buysell', 'buyorsell', 'tradetype', 'action', 'bs', 'txntype', 'transaction', 'direction', 'type'],
+  quantity: ['quantity', 'qty', 'filledqty', 'tradedqty', 'tradequantity', 'quantitytraded', 'shares', 'units', 'filledquantity', 'netqty', 'volume'],
+  price: ['price', 'tradeprice', 'avgprice', 'averageprice', 'executionprice', 'fillprice', 'tradedprice', 'rate', 'netrate', 'avgtradedprice'],
+  date: ['date', 'tradedate', 'orderdate', 'executiondate', 'filldate', 'transactiondate', 'datetime', 'timestamp', 'orderexecutiontime', 'tradedatetime', 'tradetimestamp'],
+  time: ['time', 'tradetime', 'ordertime', 'executiontime', 'filltime', 'exchangetime'],
+  order_id: ['orderid', 'orderno', 'ordernumber', 'orderref'],
+  trade_id: ['tradeid', 'tradeno', 'tradenumber', 'fillid', 'executionid', 'exchtradeid'],
+  ...COMMON_FIELDS,
+};
+const TRADE_FIELDS = {
+  symbol: FILL_FIELDS.symbol,
+  side: ['side', 'direction', 'position', 'longshort', 'type', 'tradetype', 'action'],
+  quantity: ['quantity', 'qty', 'shares', 'units'],
+  buy_quantity: ['buyquantity', 'buyqty', 'qtybought', 'boughtqty', 'entryqty', 'entryquantity'],
+  buy_price: ['buyprice', 'avgbuyprice', 'buyavg', 'buyavgprice', 'entryprice', 'avgentry', 'entry'],
+  sell_quantity: ['sellquantity', 'sellqty', 'qtysold', 'soldqty', 'exitqty', 'exitquantity'],
+  sell_price: ['sellprice', 'avgsellprice', 'sellavg', 'sellavgprice', 'exitprice', 'avgexit', 'exit'],
+  entry_date: ['entrydate', 'buydate', 'opendate', 'entrytime', 'entrydatetime', 'opened', 'dateopened'],
+  exit_date: ['exitdate', 'selldate', 'closedate', 'exittime', 'exitdatetime', 'closed', 'dateclosed'],
+  pnl: ['pnl', 'profitloss', 'realizedpnl', 'realisedpnl', 'netpnl', 'pl', 'profit', 'grosspnl'],
+  return_pct: ['returnpct', 'returnpercent', 'return', 'pnlpct', 'pnlpercent', 'roi', 'changepct'],
+  status: ['status', 'state', 'tradestatus'],
+  ...COMMON_FIELDS,
+};
+const REQUIRED = { fill: ['symbol', 'side', 'quantity', 'price', 'date'], trade: ['symbol', 'buy_price', 'entry_date'] };
+const POSITIONAL = {
+  fill: ['symbol', 'side', 'quantity', 'price', 'date', 'time'],
+  trade: ['symbol', 'side', 'buy_quantity', 'buy_price', 'sell_quantity', 'sell_price', 'entry_date', 'exit_date', 'pnl'],
+};
+const fieldsFor = (shape) => (shape === 'trade' ? TRADE_FIELDS : FILL_FIELDS);
+
+function headerLooksLikeData(headers) {
+  let hits = 0;
+  headers.forEach((h) => { if (isNum(num(h)) || parseDate(h)) hits++; });
+  return hits >= 2;
+}
+
+function detectShape(headers) {
+  const keys = headers.map(normKey);
+  const tradeOnly = ['buy_price', 'sell_price', 'entry_date', 'exit_date', 'buy_quantity', 'sell_quantity', 'pnl'];
+  let score = 0;
+  tradeOnly.forEach((f) => { if (TRADE_FIELDS[f].some((syn) => keys.includes(syn))) score++; });
+  return score >= 2 ? 'trade' : 'fill';
+}
+
+/* mapping: { field: { col: index|-1, how: 'exact'|'fuzzy'|'positional'|'manual'|'none' } } */
+function autoMap(headers, shape, headerless) {
+  const defs = fieldsFor(shape);
+  const keys = headers.map(normKey);
+  const used = new Set();
+  const map = {};
+  Object.keys(defs).forEach((f) => (map[f] = { col: -1, how: 'none' }));
+  if (headerless) {
+    POSITIONAL[shape].forEach((f, i) => { if (i < headers.length) { map[f] = { col: i, how: 'positional' }; used.add(i); } });
+    return map;
+  }
+  // pass 1: exact synonym match in synonym priority order
+  Object.entries(defs).forEach(([f, syns]) => {
+    for (const syn of syns) {
+      const i = keys.findIndex((k, idx) => k === syn && !used.has(idx));
+      if (i >= 0) { map[f] = { col: i, how: 'exact' }; used.add(i); break; }
+    }
+  });
+  // pass 2: header contains a (longish) synonym
+  Object.entries(defs).forEach(([f, syns]) => {
+    if (map[f].col >= 0) return;
+    for (const syn of syns) {
+      if (syn.length < 4) continue;
+      const i = keys.findIndex((k, idx) => !used.has(idx) && k.includes(syn));
+      if (i >= 0) { map[f] = { col: i, how: 'fuzzy' }; used.add(i); break; }
+    }
+  });
+  // pass 3: positional fallback for required fields still missing
+  POSITIONAL[shape].forEach((f, i) => {
+    if (REQUIRED[shape].includes(f) && map[f].col < 0 && i < headers.length && !used.has(i)) { map[f] = { col: i, how: 'positional' }; used.add(i); }
+  });
+  return map;
+}
+
+/* raw table: {headers:[...], rows:[[...]], headerless:bool} */
+function rawFromCSV(text) {
+  const res = Papa.parse(text.replace(/^﻿/, ''), { header: false, skipEmptyLines: 'greedy', dynamicTyping: false });
+  let rows = res.data.filter((r) => r.some((c) => String(c).trim() !== ''));
+  if (!rows.length) return { headers: [], rows: [], headerless: false };
+  const first = rows[0].map((c) => String(c).trim());
+  const headerless = headerLooksLikeData(first);
+  const headers = headerless ? first.map((_, i) => `col${i + 1}`) : first;
+  return { headers, rows: headerless ? rows : rows.slice(1), headerless };
+}
+function rawFromObjects(objs) {
+  const headers = [];
+  objs.forEach((o) => Object.keys(o || {}).forEach((k) => { const v = o[k]; if ((v === null || typeof v !== 'object') && !headers.includes(k)) headers.push(k); }));
+  return { headers, rows: objs.map((o) => headers.map((h) => (o?.[h] ?? ''))), headerless: false };
+}
+
+function makeSource({ kind, name, raw, extra }) {
+  const shape = detectShape(raw.headers);
+  return { id: uid(), kind, name, raw, shape, mapping: autoMap(raw.headers, shape, raw.headerless), extra: extra || {}, loadedAt: new Date().toISOString() };
+}
+
+/* Fill schema (internal):
+   {id, key, source, seq, symbol, side, qty, price, date, time, series, exchange, instrument_type,
+    expiry, strike, option_type, strategy, sector, charges, current_price, prev_close, stop_loss, target,
+    remarks, order_id, trade_id, reported_pnl} */
+function normalizeSource(src) {
+  const { raw, shape, mapping } = src;
+  const fills = [], errors = [];
+  const get = (row, f) => { const m = mapping[f]; return m && m.col >= 0 ? row[m.col] : undefined; };
+  const str = (v) => (v === undefined || v === null ? '' : String(v).trim());
+  const common = (row, symbol) => {
+    const exp = parseDate(get(row, 'expiry'));
+    const strike = num(get(row, 'strike'));
+    return {
+      series: str(get(row, 'series')).toUpperCase(),
+      exchange: str(get(row, 'exchange')).toUpperCase(),
+      instrument_type: str(get(row, 'instrument_type')).toUpperCase(),
+      expiry: exp ? exp.date : '',
+      strike: isNum(strike) && strike > 0 ? strike : null,
+      option_type: parseOptionType(get(row, 'option_type'), symbol),
+      strategy: str(get(row, 'strategy')),
+      sector: str(get(row, 'sector')),
+      current_price: num(get(row, 'current_price')),
+      prev_close: num(get(row, 'prev_close')),
+      stop_loss: num(get(row, 'stop_loss')),
+      target: num(get(row, 'target')),
+      remarks: str(get(row, 'remarks')),
+    };
+  };
+  const rowsArr = raw.rows;
+  // broker exports are often newest-first: if so, process in reverse so same-day ties keep chronological order
+  let order = rowsArr.map((_, i) => i);
+  if (shape === 'fill' && mapping.date.col >= 0 && rowsArr.length > 1) {
+    const a = parseDate(rowsArr[0][mapping.date.col]), b = parseDate(rowsArr[rowsArr.length - 1][mapping.date.col]);
+    if (a && b && a.date > b.date) order = order.reverse();
+  }
+  order.forEach((ri, seqIdx) => {
+    const row = rowsArr[ri];
+    const symbol = str(get(row, 'symbol')).toUpperCase();
+    if (!symbol) { errors.push({ row: ri + 1, reason: 'missing symbol' }); return; }
+    if (shape === 'fill') {
+      const qRaw = num(get(row, 'quantity'));
+      const side = parseSide(get(row, 'side'), qRaw);
+      const price = num(get(row, 'price'));
+      const dt = parseDate(get(row, 'date'));
+      if (!side) { errors.push({ row: ri + 1, reason: `unknown side "${str(get(row, 'side'))}"` }); return; }
+      if (!isNum(qRaw) || qRaw === 0) { errors.push({ row: ri + 1, reason: 'bad quantity' }); return; }
+      if (!isNum(price)) { errors.push({ row: ri + 1, reason: 'bad price' }); return; }
+      if (!dt) { errors.push({ row: ri + 1, reason: `unparsed date "${str(get(row, 'date'))}"` }); return; }
+      const t = parseTime(get(row, 'time')) || dt.time;
+      const ch = num(get(row, 'charges'));
+      fills.push({
+        source: src.id, seq: seqIdx, symbol, side, qty: Math.abs(qRaw), price, date: dt.date, time: t,
+        charges: isNum(ch) ? Math.abs(ch) : null, order_id: str(get(row, 'order_id')), trade_id: str(get(row, 'trade_id')),
+        ...common(row, symbol),
+      });
+    } else {
+      const sideRaw = str(get(row, 'side')).toUpperCase();
+      const short = ['SHORT', 'SELL', 'S', '-1'].includes(sideRaw);
+      const q = num(get(row, 'quantity'));
+      let bq = num(get(row, 'buy_quantity')); if (!isNum(bq)) bq = q;
+      let sq = num(get(row, 'sell_quantity')); if (!isNum(sq)) sq = q;
+      const bp = num(get(row, 'buy_price')), sp = num(get(row, 'sell_price'));
+      const ed = parseDate(get(row, 'entry_date')), xd = parseDate(get(row, 'exit_date'));
+      const status = str(get(row, 'status')).toUpperCase();
+      const isOpen = status === 'OPEN' || !xd;
+      if (!ed) { errors.push({ row: ri + 1, reason: 'unparsed entry date' }); return; }
+      const ch = num(get(row, 'charges')), pnl = num(get(row, 'pnl'));
+      const c = common(row, symbol);
+      const [entrySide, entryQ, entryP, exitSide, exitQ, exitP] = short ? ['SELL', sq, sp, 'BUY', bq, bp] : ['BUY', bq, bp, 'SELL', sq, sp];
+      if (!isNum(entryQ) || entryQ <= 0 || !isNum(entryP)) { errors.push({ row: ri + 1, reason: 'missing entry qty/price' }); return; }
+      fills.push({ source: src.id, seq: seqIdx * 2, symbol, side: entrySide, qty: Math.abs(entryQ), price: entryP, date: ed.date, time: ed.time,
+        charges: isOpen && isNum(ch) ? Math.abs(ch) : null, order_id: '', trade_id: `row${ri + 1}-in`, ...c });
+      if (!isOpen && isNum(exitQ) && exitQ > 0 && isNum(exitP)) {
+        fills.push({ source: src.id, seq: seqIdx * 2 + 1, symbol, side: exitSide, qty: Math.abs(exitQ), price: exitP, date: xd.date, time: xd.time,
+          charges: isNum(ch) ? Math.abs(ch) : null, order_id: '', trade_id: `row${ri + 1}-out`, reported_pnl: isNum(pnl) ? pnl : null, ...c, remarks: '' });
+      }
+    }
+  });
+  return { fills, errors };
+}
+
+/* identity used for de-duplication across sources (and for remarks) */
+const fillIdentity = (f) => (f.trade_id && !/^row\d+-/.test(f.trade_id)
+  ? `T|${f.exchange}|${f.trade_id}`
+  : `F|${f.symbol}|${f.expiry}|${f.strike ?? ''}|${f.option_type}|${f.side}|${f.qty}|${f.price}|${f.date}|${f.time}`);
+
+/* merge all sources: an identity appearing k times in one source is k real fills; across sources we keep max(k) */
+function mergeFills(perSource) {
+  const best = new Map(); // identity -> {count, fills}
+  perSource.forEach(({ fills }) => {
+    const local = new Map();
+    fills.forEach((f) => { const id = fillIdentity(f); if (!local.has(id)) local.set(id, []); local.get(id).push(f); });
+    local.forEach((arr, id) => { const cur = best.get(id); if (!cur || arr.length > cur.length) best.set(id, arr); });
+  });
+  const out = [];
+  best.forEach((arr, id) => arr.forEach((f, i) => out.push({ ...f, key: i ? `${id}#${i}` : id })));
+  let dupes = sum(perSource, (s) => s.fills.length) - out.length;
+  return { fills: out, dupes };
+}
+
+/* ------------------------------------------------------- FIFO ledger */
+const isDerivative = (f) => !!(f.expiry || f.strike || f.option_type);
+const positionKey = (f) => (isDerivative(f) ? `${f.symbol}|${f.expiry}|${f.strike ?? ''}|${f.option_type}` : f.symbol);
+const positionLabel = (f) => (isDerivative(f) ? [f.symbol, f.expiry ? fmtDate(f.expiry).slice(0, 6) : '', f.strike ?? '', f.option_type].filter(Boolean).join(' ') : f.symbol);
+const instrumentKind = (f) => {
+  if (f.option_type) return 'OPT';
+  if (f.expiry) return 'FUT';
+  return f.instrument_type && !['EQ', 'EQUITY', 'STOCK', 'STK', 'CASH'].includes(f.instrument_type) ? f.instrument_type : 'EQ';
+};
+const mode = (arr) => { const c = {}; arr.filter(Boolean).forEach((x) => (c[x] = (c[x] || 0) + 1)); return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0] || ''; };
+
+function buildLedger(fills, { chargeRate = 0, prices = {}, cmpOverrides = {} } = {}) {
+  const groups = new Map();
+  fills.forEach((f) => { const k = positionKey(f); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(f); });
+  const positions = [], closedTrades = [], fillRealized = {}, fillCharges = {};
+  const today = todayStr();
+
+  groups.forEach((gf, key) => {
+    gf.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time) || a.source.localeCompare(b.source) || a.seq - b.seq);
+    const lots = [];
+    const matches = [];
+    let buyQty = 0, buyVal = 0, sellQty = 0, sellVal = 0, charges = 0, chargesEstimated = false;
+    gf.forEach((f) => {
+      const ch = isNum(f.charges) ? f.charges : (f.qty * f.price * chargeRate) / 100;
+      if (!isNum(f.charges) && chargeRate > 0) chargesEstimated = true;
+      fillCharges[f.key] = ch; charges += ch;
+      const dir = f.side === 'BUY' ? 1 : -1;
+      if (dir === 1) { buyQty += f.qty; buyVal += f.qty * f.price; } else { sellQty += f.qty; sellVal += f.qty * f.price; }
+      let rem = f.qty;
+      while (rem > 1e-9 && lots.length && lots[0].dir !== dir) {
+        const lot = lots[0];
+        const m = Math.min(lot.qty, rem);
+        const pnl = lot.dir === 1 ? (f.price - lot.price) * m : (lot.price - f.price) * m;
+        matches.push({ entry: lot.fill, exit: f, qty: m, entryPrice: lot.price, exitPrice: f.price, dir: lot.dir, pnl,
+          entryDate: lot.fill.date, exitDate: f.date, entryChargeShare: (fillCharges[lot.fill.key] || 0) * (m / lot.fill.qty) });
+        fillRealized[f.key] = (fillRealized[f.key] || 0) + pnl;
+        lot.qty -= m; rem -= m;
+        if (lot.qty <= 1e-9) lots.shift();
+      }
+      if (rem > 1e-9) lots.push({ qty: rem, price: f.price, dir, fill: f });
+    });
+
+    const first = gf[0], last = gf[gf.length - 1];
+    const label = positionLabel(first);
+    const strategy = mode(gf.map((f) => f.strategy));
+    const sector = mode(gf.map((f) => f.sector));
+    const realized = sum(matches, (m) => m.pnl);
+    const openQtySigned = sum(lots, (l) => l.qty * l.dir);
+    const openQty = Math.abs(openQtySigned);
+    const openDir = openQtySigned >= 0 ? 1 : -1;
+    const openCost = sum(lots, (l) => l.qty * l.price);
+    const avgOpen = openQty > 1e-9 ? openCost / openQty : null;
+    const fillCmp = [...gf].reverse().find((f) => isNum(f.current_price))?.current_price;
+    const prevClose = [...gf].reverse().find((f) => isNum(f.prev_close))?.prev_close;
+    const cmp = isNum(num(cmpOverrides[key])) ? num(cmpOverrides[key]) : isNum(prices[key]) ? prices[key] : isNum(prices[first.symbol]) && !isDerivative(first) ? prices[first.symbol] : isNum(fillCmp) ? fillCmp : null;
+    const hasCmp = isNum(cmp) && openQty > 1e-9;
+    const unrealized = hasCmp ? sum(lots, (l) => (cmp - l.price) * l.qty * l.dir) : 0;
+    const marketValue = openQty > 1e-9 ? (hasCmp ? cmp * openQty : openCost) : 0;
+    const todayMtm = hasCmp && isNum(prevClose) ? (cmp - prevClose) * openQtySigned : null;
+    const total = realized + unrealized;
+    const basis = first.side === 'SELL' && sellVal > 0 ? sellVal : buyVal || sellVal; // entry-side value
+    // integrity: realized must equal Σsells − Σbuys + remaining long cost − remaining short proceeds
+    const longOpenCost = sum(lots.filter((l) => l.dir === 1), (l) => l.qty * l.price);
+    const shortOpenProceeds = sum(lots.filter((l) => l.dir === -1), (l) => l.qty * l.price);
+    const integrityDiff = realized - (sellVal - buyVal + longOpenCost - shortOpenProceeds);
+    const reported = gf.filter((f) => isNum(f.reported_pnl));
+    const closeDates = matches.map((m) => m.exitDate).sort();
+    const status = openQty > 1e-9 ? (matches.length ? 'PARTIAL' : 'OPEN') : 'CLOSED';
+
+    positions.push({
+      key, label, symbol: first.symbol, status, strategy, sector, fills: gf, lots, matches,
+      kind: instrumentKind(first), expiry: first.expiry, strike: first.strike, option_type: first.option_type,
+      buyQty, sellQty, avgBuy: buyQty ? buyVal / buyQty : null, avgSell: sellQty ? sellVal / sellQty : null, buyVal, sellVal,
+      openQty, openQtySigned, openDir, openCost, avgOpen, cmp: isNum(cmp) ? cmp : null, hasCmp, marketValue, todayMtm,
+      realized, unrealized, total, charges, chargesEstimated, net: total - charges,
+      returnPct: basis ? (total / basis) * 100 : null,
+      openReturnPct: openCost && hasCmp ? (unrealized / openCost) * 100 : null,
+      openDate: first.date, closeDate: status === 'CLOSED' ? last.date : (closeDates[closeDates.length - 1] || null),
+      firstOpenLotDate: lots[0]?.fill.date || null,
+      daysHeld: lots[0] ? Math.max(0, dayNum(today) - dayNum(lots[0].fill.date)) : null,
+      integrityDiff,
+      reportedPnl: reported.length ? sum(reported, (f) => f.reported_pnl) : null,
+    });
+
+    // closed trades = matches grouped by the closing fill
+    const byExit = new Map();
+    matches.forEach((m) => { if (!byExit.has(m.exit.key)) byExit.set(m.exit.key, []); byExit.get(m.exit.key).push(m); });
+    byExit.forEach((ms, exitKey) => {
+      const exit = ms[0].exit;
+      const qty = sum(ms, (m) => m.qty);
+      const entryVal = sum(ms, (m) => m.entryPrice * m.qty);
+      const wEntryDay = sum(ms, (m) => dayNum(m.entryDate) * m.qty) / qty;
+      const holdDays = Math.max(0, Math.round(dayNum(exit.date) - wEntryDay));
+      const firstEntry = ms.map((m) => m.entry).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))[0];
+      const pnl = sum(ms, (m) => m.pnl);
+      const tCharges = (fillCharges[exitKey] || 0) * (qty / exit.qty) + sum(ms, (m) => m.entryChargeShare);
+      const stop = ms.map((m) => m.entry.stop_loss).find(isNum);
+      closedTrades.push({
+        id: exitKey, posKey: key, label, symbol: first.symbol, dir: ms[0].dir, qty,
+        entryPrice: entryVal / qty, exitPrice: exit.price, entryValue: entryVal,
+        entryDate: firstEntry.date, exitDate: exit.date, holdDays, intraday: holdDays === 0,
+        pnl, pnlPct: entryVal ? (pnl / entryVal) * 100 : 0, charges: tCharges, net: pnl - tCharges,
+        strategy: firstEntry.strategy || exit.strategy || strategy || 'Unassigned', sector: sector || '—',
+        stopLoss: isNum(stop) ? stop : null, entryWeekday: weekdayOf(firstEntry.date),
+      });
+    });
+  });
+
+  closedTrades.sort((a, b) => a.exitDate.localeCompare(b.exitDate) || a.entryDate.localeCompare(b.entryDate));
+  positions.sort((a, b) => (a.status === 'CLOSED') - (b.status === 'CLOSED') || Math.abs(b.total) - Math.abs(a.total));
+  return { positions, closedTrades, fillRealized, fillCharges };
+}
+
+/* ------------------------------------------------------- returns */
+function computeCAGR({ startCapital, startDate, endValue, endDate }) {
+  if (!(startCapital > 0)) return { value: null, hint: 'Enter starting capital in Settings' };
+  if (!startDate) return { value: null, hint: 'Enter a start date in Settings' };
+  if (!isNum(endValue) || !endDate) return { value: null, hint: 'No trades yet' };
+  const years = (dayNum(endDate) - dayNum(startDate)) / 365.25;
+  if (!(years > 0)) return { value: null, hint: 'Start date must be before the latest date' };
+  if (endValue <= 0) return { value: -1, years, endValue };
+  return { value: Math.pow(endValue / startCapital, 1 / years) - 1, years, endValue, short: years < 0.25 };
+}
+
+/* flows: [{date:'YYYY-MM-DD', amount}] — negative = money in, positive = money out/current value */
+function computeXIRR(flows) {
+  const cf = flows.filter((f) => isNum(f.amount) && Math.abs(f.amount) > 1e-9 && f.date).sort((a, b) => a.date.localeCompare(b.date));
+  if (cf.length < 2) return { value: null, hint: 'Needs at least one pay-in plus a current value' };
+  if (!cf.some((f) => f.amount < 0) || !cf.some((f) => f.amount > 0)) return { value: null, hint: 'Needs both money in and money out/value' };
+  const t0 = dayNum(cf[0].date);
+  const ts = cf.map((f) => (dayNum(f.date) - t0) / 365);
+  if (ts[ts.length - 1] <= 0) return { value: null, hint: 'All flows fall on one date' };
+  const f = (r) => sum(cf, (c, i) => c.amount / Math.pow(1 + r, ts[i]));
+  const df = (r) => sum(cf, (c, i) => (-ts[i] * c.amount) / Math.pow(1 + r, ts[i] + 1));
+  let r = 0.1;
+  for (let i = 0; i < 60; i++) {
+    const fv = f(r), d = df(r);
+    if (!isNum(fv) || !isNum(d) || d === 0) break;
+    const next = r - fv / d;
+    if (!isNum(next) || next <= -0.99 || next > 10) break;
+    if (Math.abs(next - r) < 1e-9) return { value: next, method: 'newton' };
+    r = next;
+  }
+  let lo = -0.99, hi = 10, flo = f(lo), fhi = f(hi);
+  if (!isNum(flo) || !isNum(fhi) || flo * fhi > 0) return { value: null, hint: 'No solution in −99%…1000%' };
+  for (let i = 0; i < 300; i++) {
+    const mid = (lo + hi) / 2, fm = f(mid);
+    if (Math.abs(fm) < 1e-7 || hi - lo < 1e-10) return { value: mid, method: 'bisection' };
+    if (flo * fm < 0) { hi = mid; } else { lo = mid; flo = fm; }
+  }
+  return { value: (lo + hi) / 2, method: 'bisection' };
+}
+
+/* ------------------------------------------------------- sample data (clearly labelled) */
+function makeSampleData() {
+  let s = 20251001;
+  const rnd = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
+  const gauss = () => (rnd() + rnd() + rnd() + rnd() - 2) * 1.2;
+  const days = [];
+  for (let n = dayNum('2025-10-01'); n <= dayNum('2026-09-30'); n++) { const d = fromDayNum(n); const w = weekdayOf(d); if (w > 0 && w < 6) days.push(d); }
+  const univ = [
+    { symbol: 'RELIANCE', sector: 'Energy', p: 1380, strategy: 'Swing' }, { symbol: 'TCS', sector: 'IT', p: 3900, strategy: 'Positional' },
+    { symbol: 'HDFCBANK', sector: 'Financials', p: 1650, strategy: 'Swing' }, { symbol: 'TATAMOTORS', sector: 'Auto', p: 980, strategy: 'Momentum' },
+    { symbol: 'INFY', sector: 'IT', p: 1850, strategy: 'Positional' }, { symbol: 'ADANIENT', sector: 'Infra', p: 2950, strategy: 'Momentum' },
+    { symbol: 'SBIN', sector: 'Financials', p: 780, strategy: 'Intraday' }, { symbol: 'ITC', sector: 'FMCG', p: 470, strategy: 'Intraday' },
+  ];
+  const candles = {};
+  univ.forEach((u) => {
+    let c = u.p; const arr = [];
+    days.forEach((d) => {
+      const o = c * (1 + gauss() * 0.004);
+      c = Math.max(5, o * (1 + 0.0003 + gauss() * 0.015));
+      const h = Math.max(o, c) * (1 + rnd() * 0.009), l = Math.min(o, c) * (1 - rnd() * 0.009);
+      arr.push({ time: d, open: +o.toFixed(2), high: +h.toFixed(2), low: +l.toFixed(2), close: +c.toFixed(2) });
+    });
+    candles[u.symbol] = arr;
+  });
+  const MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const brokerDate = (d) => { const [y, m, dd] = d.split('-'); return `${dd} ${MON[+m - 1]} ${y}`; };
+  const rows = []; let oid = 1000;
+  const push = (u, side, qty, price, d, time, last) => {
+    const val = qty * price;
+    const charges = u.strategy === 'Intraday' ? 20 + val * 0.00025 : val * 0.0011;
+    rows.push([u.symbol, side, qty, price.toFixed(2), brokerDate(d), time, 'NSE', 'EQ', u.strategy, u.sector, `OD${oid++}`, `T${oid * 7}`, charges.toFixed(2),
+      last ? last.close.toFixed(2) : '', last ? last.prev.toFixed(2) : '', '']);
+  };
+  const holdRange = { Intraday: [0, 0], Swing: [2, 12], Momentum: [1, 30], Positional: [15, 80] };
+  univ.forEach((u, ui) => {
+    const cs = candles[u.symbol];
+    let i = 3 + Math.floor(rnd() * 15);
+    const keepOpen = ui % 2 === 0;
+    while (i < cs.length - 5) {
+      const [a, b] = holdRange[u.strategy];
+      const hold = a + Math.floor(rnd() * (b - a + 1));
+      const qty = Math.max(1, Math.round((u.strategy === 'Intraday' ? 250000 : 120000) / cs[i].close));
+      const remainingAfter = cs.length - (i + hold);
+      if (remainingAfter < 3 && keepOpen) {
+        const lastC = cs[cs.length - 1], prev = cs[cs.length - 2];
+        push(u, 'BUY', qty, cs[i].close, cs[i].time, '10:05:00', { close: lastC.close, prev: prev.close });
+        break;
+      }
+      if (i + hold >= cs.length) break;
+      if (u.strategy === 'Intraday') {
+        push(u, 'BUY', qty, cs[i].open, cs[i].time, '09:21:00');
+        push(u, 'SELL', qty, cs[i].close, cs[i].time, '15:12:00');
+        i += 2 + Math.floor(rnd() * 6);
+      } else {
+        push(u, 'BUY', qty, cs[i].close, cs[i].time, '10:05:00');
+        if (hold > 6 && rnd() < 0.4) {
+          const half = Math.floor(qty / 2), mid = i + Math.floor(hold / 2);
+          push(u, 'SELL', half, cs[mid].close, cs[mid].time, '14:40:00');
+          push(u, 'SELL', qty - half, cs[i + hold].close, cs[i + hold].time, '14:40:00');
+        } else push(u, 'SELL', qty, cs[i + hold].close, cs[i + hold].time, '14:40:00');
+        i += hold + 3 + Math.floor(rnd() * 14);
+      }
+    }
+  });
+  // one closed and one open index option
+  const opt = (side, qty, price, d, time, strike, cmp, prev) => rows.push(['NIFTY', side, qty, price.toFixed(2), brokerDate(d), time, 'NFO', 'OPTIDX', 'Options', 'Index', `OD${oid++}`, `T${oid * 7}`, '45.00', cmp ? cmp.toFixed(2) : '', prev ? prev.toFixed(2) : '', '', '2026-10-27', String(strike), 'CE']);
+  rows.forEach((r) => r.push('', '', ''));
+  opt('BUY', 75, 142.5, days[days.length - 30], '11:02:00', 24800, null, null);
+  opt('SELL', 75, 96.2, days[days.length - 26], '13:30:00', 24800, null, null);
+  opt('BUY', 150, 182.5, days[days.length - 6], '10:30:00', 25000, 214.35, 198.1);
+  rows.sort((a, b) => (parseDate(a[4]).date + a[5]).localeCompare(parseDate(b[4]).date + b[5]));
+  const headers = ['Symbol', 'Trade Type', 'Quantity', 'Price', 'Trade Date', 'Time', 'Exchange', 'Series', 'Strategy', 'Sector', 'Order ID', 'Trade ID', 'Charges', 'LTP', 'Prev Close', 'Remarks', 'Expiry', 'Strike', 'Option Type'];
+  return { headers, rows, headerless: false, candles };
+}
+
+/* ------------------------------------------------------- theme tokens for charts */
+function readTokens() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = (n) => cs.getPropertyValue(n).trim();
+  return { accent: g('--accent'), pos: g('--pos'), neg: g('--neg'), warn: g('--warn'), text: g('--text'), muted: g('--muted'),
+    border: g('--border'), card: g('--card'), card2: g('--card-2'), bg: g('--bg'), cat: [1, 2, 3, 4, 5, 6, 7, 8].map((i) => g('--c' + i)) };
+}
+const TokensCtx = React.createContext(null);
+const useTok = () => React.useContext(TokensCtx);
+const axisProps = (T) => ({ stroke: T.border, tick: { fill: T.muted, fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }, tickLine: false });
+const tipStyle = (T) => ({ contentStyle: { background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12, color: T.text }, labelStyle: { color: T.muted }, itemStyle: { color: T.text } });
+
+/* ------------------------------------------------------- small components */
+function KpiCard({ label, value, tone, hint, title }) {
+  return (
+    <div className="kpi" title={title}>
+      <span className="label">{label}</span>
+      <span className={'v ' + (tone || '')}>{value}</span>
+      {hint ? <span className="h">{hint}</span> : null}
+    </div>
+  );
+}
+function Card({ title, right, children, className = '' }) {
+  return (
+    <section className={'card ' + className}>
+      {(title || right) && <div className="card-h"><h3>{title}</h3><div className="row">{right}</div></div>}
+      {children}
+    </section>
+  );
+}
+function Drawer({ title, onClose, children }) {
+  useEffect(() => { const k = (e) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [onClose]);
+  return (
+    <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <aside className="drawer" role="dialog" aria-label={title}>
+        <div className="drawer-h"><h2>{title}</h2><button className="iconbtn" onClick={onClose} aria-label="Close"><Icon name="X" /></button></div>
+        {children}
+      </aside>
+    </div>
+  );
+}
+function Seg({ value, options, onChange }) {
+  return <div className="seg">{options.map(([v, l]) => <button key={v} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>{l}</button>)}</div>;
+}
+function Pill({ kind, children }) { return <span className={'pill ' + kind}>{children}</span>; }
+const StatusPill = ({ s }) => <Pill kind={s === 'OPEN' ? 'open' : s === 'PARTIAL' ? 'partial' : 'closed'}>{s}</Pill>;
+
+function useSort(rows, initial, getters) {
+  const [sort, setSort] = useState(initial);
+  const sorted = useMemo(() => {
+    if (!sort?.key) return rows;
+    const g = getters[sort.key] || ((r) => r[sort.key]);
+    return [...rows].sort((a, b) => {
+      const x = g(a), y = g(b);
+      const nx = x === null || x === undefined || x === '' || (typeof x === 'number' && !Number.isFinite(x));
+      const ny = y === null || y === undefined || y === '' || (typeof y === 'number' && !Number.isFinite(y));
+      if (nx && ny) return 0; if (nx) return 1; if (ny) return -1;
+      const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y));
+      return sort.dir === 'asc' ? c : -c;
+    });
+  }, [rows, sort, getters]);
+  const toggle = (key) => setSort((s) => (s?.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'desc' }));
+  const Th = ({ k, children, n }) => (
+    <th className={'sortable ' + (n ? 'n' : '')} onClick={() => toggle(k)} aria-sort={sort?.key === k ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      {children}{sort?.key === k ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : ''}
+    </th>
+  );
+  return { sorted, Th, sort };
+}
+
+/* ------------------------------------------------------- data intake */
+async function readFileText(file) {
+  if (file && typeof file.text === 'function') return file.text();
+  if (typeof file === 'string' && window.fs?.readFile) return window.fs.readFile(file, { encoding: 'utf8' });
+  throw new Error('Cannot read this file');
+}
+
+function extractPayload(json) {
+  const arr = Array.isArray(json) ? json
+    : ['fills', 'trades', 'tradebook', 'data', 'orders', 'results', 'items', 'records'].map((k) => json?.[k]).find(Array.isArray)
+      || (Array.isArray(json?.data?.trades) ? json.data.trades : null);
+  const prices = {};
+  const pr = json?.prices || json?.ltp || json?.quotes;
+  if (Array.isArray(pr)) pr.forEach((p) => { const v = num(p.price ?? p.ltp ?? p.cmp ?? p.close); if (p.symbol && isNum(v)) prices[String(p.symbol).toUpperCase()] = v; });
+  else if (pr && typeof pr === 'object') Object.entries(pr).forEach(([k, v]) => { const n = num(typeof v === 'object' ? v?.price ?? v?.ltp ?? v?.close : v); if (isNum(n)) prices[k.toUpperCase()] = n; });
+  const candles = {};
+  if (json?.candles && typeof json.candles === 'object') Object.entries(json.candles).forEach(([k, list]) => {
+    if (!Array.isArray(list)) return;
+    candles[k.toUpperCase()] = list.map((c) => {
+      const d = parseDate(c.time ?? c.date ?? c.t ?? c[0]);
+      return d && { time: d.date, open: num(c.open ?? c.o ?? c[1]), high: num(c.high ?? c.h ?? c[2]), low: num(c.low ?? c.l ?? c[3]), close: num(c.close ?? c.c ?? c[4]) };
+    }).filter((c) => c && [c.open, c.high, c.low, c.close].every(isNum)).sort((a, b) => a.time.localeCompare(b.time));
+  });
+  return { rows: arr || [], prices, candles };
+}
+
+function DropZone({ onFiles, compact }) {
+  const [over, setOver] = useState(false);
+  const ref = useRef(null);
+  return (
+    <div className={'drop ' + (over ? 'over' : '')}
+      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setOver(false); onFiles([...e.dataTransfer.files]); }}>
+      {!compact && <Icon name="Upload" size={26} />}
+      <div>{compact ? 'Drop a CSV here or' : 'Drag a broker CSV here, or'}</div>
+      <button className="btn primary" onClick={() => ref.current?.click()}><Icon name="Upload" /> Upload CSV</button>
+      <input ref={ref} id={compact ? 'csv-input-compact' : 'csv-input'} type="file" accept=".csv,text/csv,.txt" multiple hidden
+        onChange={(e) => { onFiles([...e.target.files]); e.target.value = ''; }} />
+    </div>
+  );
+}
+
+function ApiConnectPanel({ cfg, setCfg, onFetched }) {
+  const [state, setState] = useState({ status: 'idle', msg: '' });
+  const set = (k) => (e) => setCfg({ ...cfg, [k]: e.target.value });
+  const buildUrl = () => {
+    let p = cfg.path || '';
+    p = p.replace('{from}', encodeURIComponent(cfg.from || '')).replace('{to}', encodeURIComponent(cfg.to || ''))
+      .replace(/([?&]from=)(?=&|$)/, `$1${encodeURIComponent(cfg.from || '')}`).replace(/([?&]to=)(?=&|$)/, `$1${encodeURIComponent(cfg.to || '')}`);
+    return cfg.baseUrl.replace(/\/+$/, '') + (p.startsWith('/') || !p ? p : '/' + p);
+  };
+  const run = async () => {
+    if (!cfg.baseUrl) { setState({ status: 'error', msg: 'Enter a base URL first.' }); return; }
+    const url = buildUrl();
+    setState({ status: 'loading', msg: url });
+    try {
+      const headers = { Accept: 'application/json' };
+      if (cfg.token) { if (cfg.auth === 'bearer') headers.Authorization = `Bearer ${cfg.token}`; else headers[cfg.headerName || 'x-api-key'] = cfg.token; }
+      const res = await fetch(url, { headers });
+      if (!res.ok) throw new Error(`Server answered ${res.status} ${res.statusText}`);
+      const json = await res.json();
+      const { rows, prices, candles } = extractPayload(json);
+      if (!rows.length && !Object.keys(prices).length) throw new Error('The response had no trade rows (looked for an array, or a fills/trades/data key).');
+      const n = onFetched({ rows, prices, candles, name: new URL(url).host });
+      setState({ status: 'ok', msg: `Fetched ${n} trades` });
+    } catch (e) {
+      const blocked = e instanceof TypeError || /fetch|network|CSP|Content Security/i.test(String(e.message));
+      setState({ status: 'error', msg: blocked
+        ? 'The request was blocked before it reached the server. This page runs in a sandbox whose security policy (CSP/CORS) blocks most cross-origin calls. Use a CORS-enabled endpoint you control (your own backend or proxy), or paste the JSON into SEED_DATA instead.'
+        : String(e.message || e) });
+    }
+  };
+  return (
+    <div className="stack">
+      <div className="formgrid">
+        <div className="field" style={{ gridColumn: '1 / -1' }}><label className="label" htmlFor="api-base">Base URL</label>
+          <input id="api-base" className="f" placeholder="https://my-backend.example.com" value={cfg.baseUrl} onChange={set('baseUrl')} /></div>
+        <div className="field" style={{ gridColumn: '1 / -1' }}><label className="label" htmlFor="api-path">Endpoint path</label>
+          <input id="api-path" className="f mono" value={cfg.path} onChange={set('path')} /></div>
+        <div className="field"><label className="label" htmlFor="api-auth">Auth</label>
+          <select id="api-auth" className="f" value={cfg.auth} onChange={set('auth')}><option value="bearer">Bearer token</option><option value="apikey">API-key header</option></select></div>
+        {cfg.auth === 'apikey' && <div className="field"><label className="label" htmlFor="api-hname">Header name</label>
+          <input id="api-hname" className="f mono" value={cfg.headerName} onChange={set('headerName')} /></div>}
+        <div className="field" style={{ gridColumn: '1 / -1' }}><label className="label" htmlFor="api-token">Token</label>
+          <input id="api-token" className="f mono" type="password" autoComplete="off" value={cfg.token} onChange={set('token')} placeholder="kept in memory only" /></div>
+        <div className="field"><label className="label" htmlFor="api-from">From</label><input id="api-from" className="f" type="date" value={cfg.from} onChange={set('from')} /></div>
+        <div className="field"><label className="label" htmlFor="api-to">To</label><input id="api-to" className="f" type="date" value={cfg.to} onChange={set('to')} /></div>
+      </div>
+      <div className="row">
+        <button className="btn primary" onClick={run} disabled={state.status === 'loading'}>
+          {state.status === 'loading' ? <Icon name="Loader2" className="spin" /> : <Icon name="RefreshCw" />} Fetch trades
+        </button>
+        <span className="tiny muted mono" style={{ overflowWrap: 'anywhere' }}>{cfg.baseUrl ? buildUrl() : 'GET {base}{path}'}</span>
+      </div>
+      {state.status === 'ok' && <div className="note ok">{state.msg}</div>}
+      {state.status === 'error' && <div className="note err">{state.msg}</div>}
+      <div className="tiny muted">The token lives only in this page's memory and is never saved. The JSON response goes through the same normalizer as CSV files.</div>
+    </div>
+  );
+}
+
+function SchemaEditor({ src, result, onChange, onRemove }) {
+  const defs = fieldsFor(src.shape);
+  const sample = src.raw.rows[0] || [];
+  const setField = (f, col) => onChange({ ...src, mapping: { ...src.mapping, [f]: { col: +col, how: +col >= 0 ? 'manual' : 'none' } } });
+  const setShape = (shape) => onChange({ ...src, shape, mapping: autoMap(src.raw.headers, shape, src.raw.headerless) });
+  const req = REQUIRED[src.shape];
+  return (
+    <div className="card tight stack">
+      <div className="row">
+        <div className="grow"><b>{src.name}</b> <span className="muted small">· {src.kind.toUpperCase()} · {src.raw.rows.length} rows → {result?.fills.length ?? 0} fills{result?.errors.length ? `, ${result.errors.length} skipped` : ''}</span></div>
+        <Seg value={src.shape} options={[['fill', 'Fill-level'], ['trade', 'Trade-level']]} onChange={setShape} />
+        {onRemove && <button className="btn sm danger" onClick={onRemove}><Icon name="Trash2" size={14} /> Remove</button>}
+      </div>
+      {src.raw.headerless && <div className="note">No header row found, so columns were mapped by position.</div>}
+      <div className="tablewrap">
+        <table className="t">
+          <thead><tr><th>Field</th><th>Column in file</th><th>Matched by</th><th>Sample value</th></tr></thead>
+          <tbody>
+            {Object.keys(defs).map((f) => {
+              const m = src.mapping[f] || { col: -1, how: 'none' };
+              return (
+                <tr key={f}>
+                  <td className="mono">{f}{req.includes(f) ? <span className="warn"> *</span> : ''}</td>
+                  <td><select className="f" style={{ minWidth: 150 }} value={m.col} onChange={(e) => setField(f, e.target.value)} aria-label={`Column for ${f}`}>
+                    <option value={-1}>— not mapped —</option>
+                    {src.raw.headers.map((h, i) => <option key={i} value={i}>{h}</option>)}
+                  </select></td>
+                  <td className={m.how === 'none' ? (req.includes(f) ? 'neg small' : 'muted small') : m.how === 'positional' ? 'warn small' : 'small'}>{m.how === 'none' && req.includes(f) ? 'missing' : m.how}</td>
+                  <td className="mono small muted">{m.col >= 0 ? String(sample[m.col] ?? '') : ''}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {result?.errors.length > 0 && <details className="small"><summary className="warn">{result.errors.length} rows skipped</summary>
+        <div className="mono tiny muted" style={{ maxHeight: 140, overflow: 'auto' }}>{result.errors.slice(0, 50).map((e, i) => <div key={i}>row {e.row}: {e.reason}</div>)}</div></details>}
+    </div>
+  );
+}
+
+function ExpectedColumns() {
+  return (
+    <div className="cols">
+      <div style={{ breakInside: 'avoid', marginBottom: 12 }}>
+        <div className="label" style={{ marginBottom: 4 }}>Fill-level (raw broker rows)</div>
+        <code>symbol</code>, <code>side</code> (BUY/SELL, B/S, 1/-1), <code>quantity</code>, <code>price</code>, <code>date</code> (15 OCT 2025, 2025/10/14), optional <code>time</code>, <code>series</code>, <code>exchange</code>, <code>instrument_type</code>, <code>expiry</code>, <code>strike</code>, <code>option_type</code>, <code>charges</code>, <code>ltp</code>/<code>current_price</code>, <code>strategy</code>, <code>sector</code>
+      </div>
+      <div style={{ breakInside: 'avoid' }}>
+        <div className="label" style={{ marginBottom: 4 }}>Trade-level (closed trades)</div>
+        <code>symbol</code>, <code>side</code>, <code>buy_quantity</code>, <code>buy_price</code>, <code>sell_quantity</code>, <code>sell_price</code>, <code>entry_date</code>, <code>exit_date</code>, <code>pnl</code>, <code>return_pct</code>, <code>strategy</code>, <code>sector</code>, <code>status</code>
+      </div>
+    </div>
+  );
+}
+
+function DataSourceBar({ stats, sources, onRemove, onUpload, onApi, onMapping }) {
+  const ref = useRef(null);
+  return (
+    <div className="card tight">
+      <div className="row">
+        <div className="grow stack" style={{ gap: 6 }}>
+          <div className="status-line">Detected <b>{stats.fills}</b> fills / <b>{stats.trades}</b> trades / <b>{stats.symbols}</b> symbols{stats.dupes ? <> · <b>{stats.dupes}</b> duplicates merged</> : null}</div>
+          <div className="row" style={{ gap: 6 }}>
+            {sources.length === 0 && <span className="tiny muted">No sources loaded</span>}
+            {sources.map((s) => (
+              <span className="chip" key={s.id}>
+                <Icon name={s.kind === 'api' ? 'Plug' : s.kind === 'seed' ? 'Database' : s.kind === 'manual' ? 'NotebookPen' : s.kind === 'sample' ? 'Sparkles' : 'FileText'} size={13} />
+                {s.name} <span className="muted">{s.count}</span>
+                {s.removable && <span className="x" role="button" tabIndex={0} aria-label={`Remove ${s.name}`} onClick={() => onRemove(s.id)} onKeyDown={(e) => e.key === 'Enter' && onRemove(s.id)}><Icon name="X" size={12} /></span>}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="row">
+          <button className="btn" onClick={() => ref.current?.click()}><Icon name="Upload" /> Upload CSV</button>
+          <input ref={ref} id="csv-input-bar" type="file" accept=".csv,text/csv,.txt" multiple hidden onChange={(e) => { onUpload([...e.target.files]); e.target.value = ''; }} />
+          <button className="btn" onClick={onApi}><Icon name="Plug" /> Connect API</button>
+          <button className="btn" onClick={onMapping}><Icon name="TableProperties" /> Columns</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ onFiles, apiCfg, setApiCfg, onFetched, onSample, onReadNamed }) {
+  const [name, setName] = useState('');
+  return (
+    <div className="stack">
+      <div className="card stack">
+        <h2>Load your trades</h2>
+        <p className="muted" style={{ margin: 0, maxWidth: '65ch' }}>Upload a broker tradebook or P&amp;L export, fetch from your own API, or paste connector JSON into <code>SEED_DATA</code> at the top of the file. Sources add up and duplicates are merged.</p>
+        <div className="grid2">
+          <div className="stack">
+            <DropZone onFiles={onFiles} />
+            {window.fs?.readFile && (
+              <div className="row"><input id="fs-name" className="f grow" placeholder="or read a project file by name, e.g. tradebook.csv" value={name} onChange={(e) => setName(e.target.value)} />
+                <button className="btn" onClick={() => name && onReadNamed(name)}>Read</button></div>
+            )}
+            <button className="btn ghost" onClick={onSample}><Icon name="Sparkles" /> Load sample data (example trades)</button>
+          </div>
+          <div className="card tight"><div className="card-h"><h3>Connect API</h3></div><ApiConnectPanel cfg={apiCfg} setCfg={setApiCfg} onFetched={onFetched} /></div>
+        </div>
+      </div>
+      <Card title="Expected columns"><ExpectedColumns /><p className="tiny muted" style={{ marginBottom: 0 }}>Headers are matched case-insensitively with common broker synonyms (tradingsymbol, trade_type, qty, ltp…). You can fix any mapping after loading.</p></Card>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- settings */
+function SettingsCapital({ settings, setSettings, derived }) {
+  const set = (k) => (e) => setSettings({ ...settings, [k]: e.target.value });
+  const flows = settings.flows;
+  const upd = (id, k, v) => setSettings({ ...settings, flows: flows.map((f) => (f.id === id ? { ...f, [k]: v } : f)) });
+  const del = (id) => setSettings({ ...settings, flows: flows.filter((f) => f.id !== id) });
+  const add = (row) => setSettings({ ...settings, flows: [...flows, { id: uid(), date: todayStr(), amount: '', type: 'Pay-in', ...row }] });
+  return (
+    <div className="stack">
+      <div className="stack" style={{ gap: 10 }}>
+        <h3>Capital</h3>
+        <div className="formgrid">
+          <div className="field"><label className="label" htmlFor="st-cap">Starting capital (₹)</label><input id="st-cap" className="f mono" inputMode="decimal" value={settings.startCapital} onChange={set('startCapital')} placeholder="e.g. 1000000" /></div>
+          <div className="field"><label className="label" htmlFor="st-date">Start date</label><input id="st-date" className="f" type="date" value={settings.startDate} onChange={set('startDate')} /></div>
+          <div className="field"><label className="label" htmlFor="st-pv">Current portfolio value override (₹)</label><input id="st-pv" className="f mono" inputMode="decimal" value={settings.portfolioOverride} onChange={set('portfolioOverride')} placeholder="optional" /></div>
+        </div>
+        <div className="tiny muted">CAGR uses starting capital and start date. Without an override, ending value = starting capital + total P&amp;L.</div>
+      </div>
+      <div className="stack" style={{ gap: 10 }}>
+        <div className="row"><h3 className="grow">Capital flows (for XIRR)</h3>
+          {settings.startCapital && settings.startDate && <button className="btn sm" onClick={() => add({ date: settings.startDate, amount: settings.startCapital, type: 'Pay-in' })}>Add starting capital as pay-in</button>}
+          <button className="btn sm" onClick={() => add({})}><Icon name="Plus" size={14} /> Add row</button></div>
+        {flows.length === 0 ? <div className="note info">No flows yet. Add each deposit as a Pay-in and each withdrawal as a Payout. XIRR shows “—” until there is at least one.</div> : (
+          <div className="tablewrap"><table className="t">
+            <thead><tr><th>Date</th><th className="n">Amount (₹)</th><th>Type</th><th></th></tr></thead>
+            <tbody>{flows.map((f) => (
+              <tr key={f.id}>
+                <td><input className="f" type="date" id={`flow-d-${f.id}`} aria-label="Flow date" value={f.date} onChange={(e) => upd(f.id, 'date', e.target.value)} /></td>
+                <td><input className="f mono" style={{ textAlign: 'right' }} id={`flow-a-${f.id}`} aria-label="Flow amount" inputMode="decimal" value={f.amount} onChange={(e) => upd(f.id, 'amount', e.target.value)} /></td>
+                <td><select className="f" id={`flow-t-${f.id}`} aria-label="Flow type" value={f.type} onChange={(e) => upd(f.id, 'type', e.target.value)}><option>Pay-in</option><option>Payout</option></select></td>
+                <td><button className="iconbtn" aria-label="Delete flow" onClick={() => del(f.id)}><Icon name="Trash2" size={14} /></button></td>
+              </tr>))}</tbody>
+          </table></div>
+        )}
+        <div className="tiny muted">Pay-in is money deployed (negative cash flow). Payout is money taken out (positive). The current portfolio value ({fmtINR(derived.portfolioValue)}) is added as a final positive flow dated today.</div>
+      </div>
+      <div className="stack" style={{ gap: 10 }}>
+        <h3>Assumptions</h3>
+        <div className="formgrid">
+          <div className="field"><label className="label" htmlFor="st-chg">Estimated charges, % of turnover</label><input id="st-chg" className="f mono" inputMode="decimal" value={settings.chargeRate} onChange={set('chargeRate')} /></div>
+          <div className="field"><label className="label" htmlFor="st-risk">Default 1R, % of entry value</label><input id="st-risk" className="f mono" inputMode="decimal" value={settings.riskPct} onChange={set('riskPct')} /></div>
+        </div>
+        <div className="tiny muted">The charges rate applies only to fills that have no charges column. 1R is used by the simulator when a trade has no stop-loss.</div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- overview */
+const OVERVIEW_COLS = [
+  { key: 'label', label: 'Symbol', get: (p) => p.label, render: (p) => <b>{p.label}</b>, on: true },
+  { key: 'status', label: 'Status', get: (p) => p.status, render: (p) => <StatusPill s={p.status} />, on: true },
+  { key: 'strategy', label: 'Strategy', get: (p) => p.strategy, render: (p) => p.strategy || <span className="muted">—</span>, on: true },
+  { key: 'buyQty', label: 'Buy Qty', n: true, get: (p) => p.buyQty, render: (p) => fmtNum(p.buyQty, 0), on: true },
+  { key: 'avgBuy', label: 'Avg Buy', n: true, get: (p) => p.avgBuy, render: (p) => fmtNum(p.avgBuy), on: true },
+  { key: 'sellQty', label: 'Sell Qty', n: true, get: (p) => p.sellQty, render: (p) => fmtNum(p.sellQty, 0), on: true },
+  { key: 'avgSell', label: 'Avg Sell', n: true, get: (p) => p.avgSell, render: (p) => fmtNum(p.avgSell), on: true },
+  { key: 'cmp', label: 'CMP', n: true, get: (p) => p.cmp, render: (p) => (p.openQty ? fmtNum(p.cmp) : <span className="muted">—</span>), on: true },
+  { key: 'mtm', label: 'MTM', n: true, get: (p) => p.marketValue, render: (p) => (p.openQty ? <span title={p.hasCmp ? 'Open qty × CMP' : 'At cost (no CMP)'}>{fmtINR(p.marketValue)}{p.hasCmp ? '' : '*'}</span> : '—'), on: false },
+  { key: 'realized', label: 'Realized', n: true, get: (p) => p.realized, render: (p) => <span className={toneOf(p.realized)}>{fmtSigned(p.realized)}</span>, on: true },
+  { key: 'unrealized', label: 'Unrealized', n: true, get: (p) => p.unrealized, render: (p) => (p.openQty ? <span className={toneOf(p.unrealized)}>{p.hasCmp ? fmtSigned(p.unrealized) : 'at cost'}</span> : '—'), on: true },
+  { key: 'total', label: 'Total P&L', n: true, get: (p) => p.total, render: (p) => <b className={toneOf(p.total)}>{fmtSigned(p.total)}</b>, on: true },
+  { key: 'returnPct', label: 'Return %', n: true, get: (p) => p.returnPct, render: (p) => <span className={toneOf(p.returnPct)}>{fmtPct(p.returnPct)}</span>, on: true },
+  { key: 'openDate', label: 'Open Date', get: (p) => p.openDate, render: (p) => fmtDate(p.openDate), on: true },
+  { key: 'closeDate', label: 'Close Date', get: (p) => p.closeDate, render: (p) => (p.status === 'CLOSED' ? fmtDate(p.closeDate) : '—'), on: true },
+  { key: 'expiry', label: 'Expiry', get: (p) => p.expiry, render: (p) => (p.expiry ? fmtDate(p.expiry) : '—'), on: false },
+  { key: 'strike', label: 'Strike', n: true, get: (p) => p.strike, render: (p) => (p.strike ? `${fmtNum(p.strike)} ${p.option_type}` : '—'), on: false },
+  { key: 'sector', label: 'Sector', get: (p) => p.sector, render: (p) => p.sector || '—', on: false },
+  { key: 'charges', label: 'Charges', n: true, get: (p) => p.charges, render: (p) => fmtINR(p.charges) + (p.chargesEstimated ? '*' : ''), on: false },
+  { key: 'net', label: 'Net P&L', n: true, get: (p) => p.net, render: (p) => <span className={toneOf(p.net)}>{fmtSigned(p.net)}</span>, on: true },
+];
+
+function PositionBreakdown({ p, fillRealized, fillCharges }) {
+  const orders = useMemo(() => {
+    const m = new Map();
+    p.fills.forEach((f) => { const k = f.order_id || f.key; if (!m.has(k)) m.set(k, []); m.get(k).push(f); });
+    return [...m.entries()].map(([id, fs]) => {
+      const q = sum(fs, (f) => f.qty);
+      return { id, fills: fs, side: fs[0].side, date: fs[0].date, time: fs[0].time, qty: q, avg: sum(fs, (f) => f.qty * f.price) / q,
+        realized: sum(fs, (f) => fillRealized[f.key] || 0), charges: sum(fs, (f) => fillCharges[f.key] || 0), hasOrderId: !!fs[0].order_id };
+    });
+  }, [p, fillRealized, fillCharges]);
+  return (
+    <div style={{ padding: '6px 0' }}>
+      <table className="t" style={{ background: 'var(--bg)' }}>
+        <thead><tr><th>Order</th><th>Trade</th><th>Date</th><th>Side</th><th className="n">Qty</th><th className="n">Price</th><th className="n">Charges</th><th className="n">Realized booked</th></tr></thead>
+        <tbody>
+          {orders.map((o) => (
+            <Fragment key={o.id}>
+              <tr><td className="mono">{o.hasOrderId ? o.id : '(no order id)'}</td><td className="muted">{o.fills.length} fill{o.fills.length > 1 ? 's' : ''}</td><td>{fmtDate(o.date)} <span className="muted tiny">{o.time}</span></td>
+                <td><Pill kind={o.side === 'BUY' ? 'buy' : 'sell'}>{o.side}</Pill></td><td className="n">{fmtNum(o.qty, 0)}</td><td className="n">{fmtNum(o.avg)}</td><td className="n">{fmtINR(o.charges, 2)}</td>
+                <td className={'n ' + toneOf(o.realized)}>{o.realized ? fmtSigned(o.realized) : ''}</td></tr>
+              {o.fills.length > 1 && o.fills.map((f) => (
+                <tr className="sub" key={f.key}><td></td><td className="mono muted">{f.trade_id || '—'}</td><td className="muted">{f.time}</td><td></td><td className="n">{fmtNum(f.qty, 0)}</td><td className="n">{fmtNum(f.price)}</td><td className="n">{fmtINR(fillCharges[f.key], 2)}</td>
+                  <td className={'n ' + toneOf(fillRealized[f.key])}>{fillRealized[f.key] ? fmtSigned(fillRealized[f.key]) : ''}</td></tr>
+              ))}
+            </Fragment>
+          ))}
+        </tbody>
+        <tfoot><tr><td colSpan={2}>Aggregate</td><td>{fmtDate(p.openDate)}</td><td></td><td className="n">{p.openQty ? `${fmtNum(p.openQty, 0)} open` : 'flat'}</td><td className="n">{p.avgOpen ? fmtNum(p.avgOpen) : ''}</td><td className="n">{fmtINR(p.charges, 2)}</td><td className={'n ' + toneOf(p.realized)}>{fmtSigned(p.realized)}</td></tr></tfoot>
+      </table>
+      {Math.abs(p.integrityDiff) > 0.01 && <div className="note err" style={{ marginTop: 8 }}>Integrity check failed by {fmtINR(p.integrityDiff, 2)}.</div>}
+      {isNum(p.reportedPnl) && Math.abs(p.reportedPnl - p.realized) > 1 && <div className="note" style={{ marginTop: 8 }}>File-reported P&amp;L {fmtSigned(p.reportedPnl, 2)} differs from FIFO realized {fmtSigned(p.realized, 2)}.</div>}
+    </div>
+  );
+}
+
+function OverviewTable({ positions, fillRealized, fillCharges }) {
+  const [vis, setVis] = useState(() => Object.fromEntries(OVERVIEW_COLS.map((c) => [c.key, c.on])));
+  const [showPicker, setShowPicker] = useState(false);
+  const [open, setOpen] = useState({});
+  const [filter, setFilter] = useState('all');
+  const getters = useMemo(() => Object.fromEntries(OVERVIEW_COLS.map((c) => [c.key, c.get])), []);
+  const rows = useMemo(() => positions.filter((p) => filter === 'all' || (filter === 'open' ? p.status !== 'CLOSED' : p.status === 'CLOSED')), [positions, filter]);
+  const { sorted, Th } = useSort(rows, null, getters);
+  const cols = OVERVIEW_COLS.filter((c) => vis[c.key]);
+  return (
+    <Card title={`Positions (${rows.length})`} right={<>
+      <Seg value={filter} options={[['all', 'All'], ['open', 'Open'], ['closed', 'Closed']]} onChange={setFilter} />
+      <button className="btn sm" onClick={() => setShowPicker((s) => !s)}><Icon name="Columns3" size={14} /> Columns</button></>}>
+      {showPicker && <div className="colpicker" style={{ marginBottom: 12 }}>
+        {OVERVIEW_COLS.map((c) => <label key={c.key}><input type="checkbox" id={`col-${c.key}`} checked={!!vis[c.key]} onChange={(e) => setVis({ ...vis, [c.key]: e.target.checked })} />{c.label}</label>)}
+      </div>}
+      <div className="tablewrap" style={{ maxHeight: 620 }}>
+        <table className="t">
+          <thead><tr><th style={{ width: 24 }}></th>{cols.map((c) => <Th key={c.key} k={c.key} n={c.n}>{c.label}</Th>)}</tr></thead>
+          <tbody>
+            {sorted.map((p) => (
+              <Fragment key={p.key}>
+                <tr className="click" onClick={() => setOpen({ ...open, [p.key]: !open[p.key] })} aria-expanded={!!open[p.key]}>
+                  <td className="muted"><Icon name={open[p.key] ? 'ChevronDown' : 'ChevronRight'} size={14} /></td>
+                  {cols.map((c) => <td key={c.key} className={c.n ? 'n' : ''}>{c.render(p)}</td>)}
+                </tr>
+                {open[p.key] && <tr><td colSpan={cols.length + 1} style={{ padding: '0 10px 10px', whiteSpace: 'normal' }}><PositionBreakdown p={p} fillRealized={fillRealized} fillCharges={fillCharges} /></td></tr>}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="tiny muted" style={{ marginTop: 8 }}>Click a row for its order → trade → aggregate breakdown. * = at cost or estimated.</div>
+    </Card>
+  );
+}
+
+function Overview({ ledger, totals, returns, onSettings }) {
+  const integrityOk = ledger.positions.every((p) => Math.abs(p.integrityDiff) < 0.01);
+  return (
+    <div className="stack">
+      <div className="kpis">
+        <KpiCard label="Total P&L" value={fmtSigned(totals.total)} tone={toneOf(totals.total)} hint={totals.missingCmp ? `${totals.missingCmp} open at cost` : 'realized + unrealized'} />
+        <KpiCard label="Realized" value={fmtSigned(totals.realized)} tone={toneOf(totals.realized)} hint="FIFO, booked on close date" />
+        <KpiCard label="Unrealized" value={fmtSigned(totals.unrealized)} tone={toneOf(totals.unrealized)} hint={totals.openCount ? 'open lots at CMP' : 'no open lots'} />
+        <KpiCard label="Net after charges" value={fmtSigned(totals.net)} tone={toneOf(totals.net)} hint={`charges ${fmtINR(totals.charges)}`} />
+        <KpiCard label="Open positions" value={totals.openCount} hint={`${fmtINR(totals.invested)} at cost`} />
+        <KpiCard label="Win rate" value={isNum(totals.winRate) ? totals.winRate.toFixed(1) + '%' : '—'} hint={`${totals.wins}W / ${totals.losses}L closed`} />
+        <KpiCard label="CAGR" value={isNum(returns.cagr.value) ? fmtPct(returns.cagr.value * 100) : '—'} tone={toneOf(returns.cagr.value)}
+          hint={isNum(returns.cagr.value) ? `${returns.cagr.years.toFixed(2)} yrs${returns.cagr.short ? ' · short period' : ''}` : <a href="#settings" onClick={(e) => { e.preventDefault(); onSettings(); }} className="acc">{returns.cagr.hint}</a>} />
+        <KpiCard label="XIRR" value={isNum(returns.xirr.value) ? fmtPct(returns.xirr.value * 100) : '—'} tone={toneOf(returns.xirr.value)}
+          hint={isNum(returns.xirr.value) ? `${returns.flowCount} flows + current value` : <a href="#settings" onClick={(e) => { e.preventDefault(); onSettings(); }} className="acc">{returns.xirr.hint}</a>} />
+      </div>
+      <div className={'note ' + (integrityOk ? 'ok' : 'err')}>
+        {integrityOk ? <>Integrity check passed: for every symbol, realized P&amp;L = Σ sells − Σ buys (adjusted for lots still open).</> : <>Integrity mismatch on {ledger.positions.filter((p) => Math.abs(p.integrityDiff) >= 0.01).map((p) => p.label).join(', ')}.</>}
+      </div>
+      <OverviewTable positions={ledger.positions} fillRealized={ledger.fillRealized} fillCharges={ledger.fillCharges} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- holdings */
+function speedBadge(h) {
+  const ret = h.openReturnPct, d = Math.max(1, h.daysHeld || 0);
+  if (isNum(ret) && ret > 0 && ret / d >= 0.5) return 'Fast';
+  if ((h.daysHeld || 0) <= 10) return 'Early';
+  if (isNum(ret) && ret > 0 && !(d > 30 && ret / d < 0.05)) return 'Steady';
+  return 'Stuck';
+}
+const SpeedPill = ({ b }) => <Pill kind={b.toLowerCase()}>{b}</Pill>;
+
+function HoldingsTable({ holdings, totalValue, cmpOverrides, setCmp }) {
+  const getters = useMemo(() => ({ alloc: (h) => h.marketValue, badge: (h) => speedBadge(h) }), []);
+  const { sorted, Th } = useSort(holdings, { key: 'marketValue', dir: 'desc' }, getters);
+  const CmpInput = ({ h }) => (
+    <input className="f mono" style={{ width: 92, textAlign: 'right', padding: '3px 6px' }} id={`cmp-${h.key}`} aria-label={`CMP for ${h.label}`}
+      defaultValue={cmpOverrides[h.key] ?? (h.cmp ?? '')} placeholder="CMP"
+      onBlur={(e) => setCmp(h.key, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />
+  );
+  return (
+    <>
+      <div className="tablewrap htable">
+        <table className="t">
+          <thead><tr>
+            <Th k="strategy">Strategy</Th><Th k="label">Symbol</Th><Th k="sector">Sector</Th><Th k="kind">Type</Th><Th k="expiry">Expiry</Th><Th k="option_type">CE/PE</Th><Th k="strike" n>Strike</Th>
+            <Th k="openQty" n>Qty</Th><Th k="avgOpen" n>Buy Price</Th><th className="n">CMP</th><Th k="marketValue" n>Value</Th><Th k="alloc" n>Alloc %</Th><Th k="todayMtm" n>Today MTM</Th>
+            <Th k="realized" n>Realized</Th><Th k="total" n>Total P&amp;L</Th><Th k="openReturnPct" n>Return %</Th><Th k="daysHeld" n>Days</Th><Th k="badge">Speed</Th>
+          </tr></thead>
+          <tbody>
+            {sorted.map((h) => (
+              <tr key={h.key}>
+                <td>{h.strategy || '—'}</td><td><b>{h.symbol}</b>{h.openDir < 0 ? <span className="tiny neg"> short</span> : null}</td><td>{h.sector || '—'}</td><td>{h.kind}</td>
+                <td>{h.expiry ? fmtDate(h.expiry) : '—'}</td><td>{h.option_type || '—'}</td><td className="n">{h.strike ? fmtNum(h.strike) : '—'}</td>
+                <td className="n">{fmtNum(h.openQty, 0)}</td><td className="n">{fmtNum(h.avgOpen)}</td><td className="n"><CmpInput h={h} /></td>
+                <td className="n">{fmtINR(h.marketValue)}{h.hasCmp ? '' : '*'}</td><td className="n">{totalValue ? ((h.marketValue / totalValue) * 100).toFixed(1) + '%' : '—'}</td>
+                <td className={'n ' + toneOf(h.todayMtm)}>{fmtSigned(h.todayMtm)}</td><td className={'n ' + toneOf(h.realized)}>{fmtSigned(h.realized)}</td>
+                <td className={'n ' + toneOf(h.total)}>{fmtSigned(h.total)}</td><td className={'n ' + toneOf(h.openReturnPct)}>{fmtPct(h.openReturnPct)}</td>
+                <td className="n">{h.daysHeld}</td><td><SpeedPill b={speedBadge(h)} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="hcards">
+        {sorted.map((h) => (
+          <div className="hcard" key={h.key}>
+            <div className="row"><b className="grow">{h.label}</b><SpeedPill b={speedBadge(h)} /></div>
+            <div className="tiny muted">{[h.strategy, h.sector, h.kind].filter(Boolean).join(' · ')}</div>
+            <div className="kv">
+              <div><div className="k">Qty</div><div className="v">{fmtNum(h.openQty, 0)}</div></div>
+              <div><div className="k">Buy</div><div className="v">{fmtNum(h.avgOpen)}</div></div>
+              <div><div className="k">CMP</div><div className="v"><CmpInput h={h} /></div></div>
+              <div><div className="k">Value</div><div className="v">{compactINR(h.marketValue)}</div></div>
+              <div><div className="k">Total P&amp;L</div><div className={'v ' + toneOf(h.total)}>{fmtSigned(h.total)}</div></div>
+              <div><div className="k">Return</div><div className={'v ' + toneOf(h.openReturnPct)}>{fmtPct(h.openReturnPct)}</div></div>
+              <div><div className="k">Alloc</div><div className="v">{totalValue ? ((h.marketValue / totalValue) * 100).toFixed(1) + '%' : '—'}</div></div>
+              <div><div className="k">Today</div><div className={'v ' + toneOf(h.todayMtm)}>{fmtSigned(h.todayMtm)}</div></div>
+              <div><div className="k">Days</div><div className="v">{h.daysHeld}</div></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function Holdings({ ledger, cmpOverrides, setCmp }) {
+  const holdings = ledger.positions.filter((p) => p.openQty > 1e-9);
+  if (!holdings.length) return <div className="empty"><Icon name="Briefcase" size={26} /><div>No open positions. Every loaded position is flat.</div></div>;
+  const invested = sum(holdings, (h) => h.openCost), value = sum(holdings, (h) => h.marketValue);
+  const unreal = sum(holdings, (h) => h.unrealized), realizedPartial = sum(holdings, (h) => h.realized);
+  const todays = holdings.filter((h) => isNum(h.todayMtm));
+  const largest = [...holdings].sort((a, b) => b.marketValue - a.marketValue)[0];
+  const noCmp = holdings.filter((h) => !h.hasCmp).length;
+  return (
+    <div className="stack">
+      <div className="kpis">
+        <KpiCard label="Invested" value={fmtINR(invested)} />
+        <KpiCard label="Current value" value={fmtINR(value)} hint={noCmp ? `${noCmp} at cost (no CMP)` : 'at CMP'} />
+        <KpiCard label="Unrealized P&L" value={fmtSigned(unreal)} tone={toneOf(unreal)} hint={invested ? fmtPct((unreal / invested) * 100) : ''} />
+        <KpiCard label="Realized (partial)" value={fmtSigned(realizedPartial)} tone={toneOf(realizedPartial)} hint="booked on these symbols" />
+        <KpiCard label="Today MTM" value={todays.length ? fmtSigned(sum(todays, (h) => h.todayMtm)) : '—'} tone={toneOf(sum(todays, (h) => h.todayMtm))} hint={todays.length ? `${todays.length} with prev close` : 'needs prev close'} />
+        <KpiCard label="Holdings" value={holdings.length} />
+        <KpiCard label="Largest alloc" value={value ? ((largest.marketValue / value) * 100).toFixed(1) + '%' : '—'} hint={largest.label} />
+      </div>
+      {noCmp > 0 && <div className="note info">{noCmp} holding{noCmp > 1 ? 's have' : ' has'} no current price and {noCmp > 1 ? 'are' : 'is'} shown at cost. Type a CMP into the table to mark it to market.</div>}
+      <HoldingsTable holdings={holdings} totalValue={value} cmpOverrides={cmpOverrides} setCmp={setCmp} />
+      <div className="tiny muted">Speed: <b>Fast</b> ≥ 0.5% return per day held · <b>Early</b> ≤ 10 days old · <b>Steady</b> positive and moving · <b>Stuck</b> flat or negative after 10 days, or under 0.05%/day after 30 days.</div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- journal */
+const EMPTY_FORM = { symbol: '', side: 'BUY', qty: '', price: '', date: '', strategy: '', sector: '', stop_loss: '', target: '', remarks: '' };
+function ManualEntryForm({ onAdd }) {
+  const [f, setF] = useState(() => ({ ...EMPTY_FORM, date: todayStr() }));
+  const [err, setErr] = useState('');
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const submit = (e) => {
+    e.preventDefault();
+    if (!f.symbol.trim()) return setErr('Enter a symbol.');
+    if (!(num(f.qty) > 0)) return setErr('Quantity must be a positive number.');
+    if (!(num(f.price) > 0)) return setErr('Price must be a positive number.');
+    if (!f.date) return setErr('Pick a date.');
+    onAdd({ ...f, symbol: f.symbol.trim().toUpperCase(), qty: num(f.qty), price: num(f.price), stop_loss: num(f.stop_loss), target: num(f.target) });
+    setErr(''); setF({ ...EMPTY_FORM, date: f.date, strategy: f.strategy, sector: f.sector });
+  };
+  const F = (k, label, props = {}) => <div className="field"><label className="label" htmlFor={`mf-${k}`}>{label}</label><input id={`mf-${k}`} className="f" value={f[k]} onChange={set(k)} {...props} /></div>;
+  return (
+    <form onSubmit={submit} className="stack" style={{ gap: 10 }}>
+      <div className="formgrid">
+        {F('symbol', 'Symbol', { placeholder: 'RELIANCE' })}
+        <div className="field"><label className="label" htmlFor="mf-side">Side</label><select id="mf-side" className="f" value={f.side} onChange={set('side')}><option>BUY</option><option>SELL</option></select></div>
+        {F('qty', 'Qty', { inputMode: 'decimal' })}{F('price', 'Price', { inputMode: 'decimal' })}{F('date', 'Date', { type: 'date' })}
+        {F('strategy', 'Strategy')}{F('sector', 'Sector')}{F('stop_loss', 'Stop loss', { inputMode: 'decimal' })}{F('target', 'Target', { inputMode: 'decimal' })}
+      </div>
+      {F('remarks', 'Remarks')}
+      <div className="row"><button className="btn primary" type="submit"><Icon name="Plus" /> Add trade</button>{err && <span className="neg small">{err}</span>}</div>
+    </form>
+  );
+}
+
+function Journal({ fills, ledger, remarks, setRemark, onAddManual, onFiles }) {
+  const [flt, setFlt] = useState({ symbol: '', strategy: '', side: '', from: '', to: '', result: '' });
+  const [day, setDay] = useState(null);
+  const T = useTok();
+  const daily = useMemo(() => {
+    const m = {};
+    ledger.closedTrades.forEach((t) => { m[t.exitDate] = (m[t.exitDate] || 0) + t.pnl; });
+    return Object.entries(m).sort().map(([date, pnl]) => ({ date, pnl }));
+  }, [ledger]);
+  const symbols = useMemo(() => [...new Set(fills.map((f) => f.symbol))].sort(), [fills]);
+  const strategies = useMemo(() => [...new Set(fills.map((f) => f.strategy).filter(Boolean))].sort(), [fills]);
+  const rows = useMemo(() => fills.filter((f) => {
+    const r = ledger.fillRealized[f.key];
+    if (day && f.date !== day) return false;
+    if (flt.symbol && f.symbol !== flt.symbol) return false;
+    if (flt.strategy && f.strategy !== flt.strategy) return false;
+    if (flt.side && f.side !== flt.side) return false;
+    if (flt.from && f.date < flt.from) return false;
+    if (flt.to && f.date > flt.to) return false;
+    if (flt.result === 'win' && !(r > 0)) return false;
+    if (flt.result === 'loss' && !(r < 0)) return false;
+    return true;
+  }), [fills, flt, day, ledger]);
+  const getters = useMemo(() => ({ realized: (f) => ledger.fillRealized[f.key], dt: (f) => f.date + f.time }), [ledger]);
+  const { sorted, Th } = useSort(rows, { key: 'dt', dir: 'desc' }, getters);
+  const set = (k) => (e) => setFlt({ ...flt, [k]: e.target.value });
+  const [limit, setLimit] = useState(150);
+  return (
+    <div className="stack">
+      <div className="grid2">
+        <Card title="Add a trade"><ManualEntryForm onAdd={onAddManual} /></Card>
+        <Card title="Import CSV"><DropZone onFiles={onFiles} compact /><p className="tiny muted" style={{ marginBottom: 0 }}>Imported rows are merged with what is already loaded; duplicates are skipped.</p></Card>
+      </div>
+      <Card title="Daily realized P&L" right={day ? <button className="btn sm" onClick={() => setDay(null)}>Showing {fmtDate(day)} · clear</button> : <span className="tiny muted">Click a bar to see that day's trades</span>}>
+        <div className="chartbox sm">
+          <ResponsiveContainer>
+            <BarChart data={daily} margin={{ top: 6, right: 6, left: 0, bottom: 0 }} onClick={(e) => e?.activeLabel && setDay(e.activeLabel === day ? null : e.activeLabel)}>
+              <CartesianGrid stroke={T.border} strokeDasharray="2 4" vertical={false} />
+              <XAxis dataKey="date" {...axisProps(T)} tickFormatter={fmtDateShort} minTickGap={24} />
+              <YAxis {...axisProps(T)} tickFormatter={compactINR} width={62} />
+              <Tooltip {...tipStyle(T)} formatter={(v) => [fmtSigned(v), 'Realized']} labelFormatter={fmtDate} cursor={{ fill: T.card2 }} />
+              <ReferenceLine y={0} stroke={T.border} />
+              <Bar dataKey="pnl" radius={[2, 2, 0, 0]} style={{ cursor: 'pointer' }}>
+                {daily.map((d) => <Cell key={d.date} fill={d.pnl >= 0 ? T.pos : T.neg} fillOpacity={!day || day === d.date ? 1 : 0.3} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+      <Card title={`Trade history (${rows.length})`}>
+        <div className="formgrid" style={{ marginBottom: 12 }}>
+          <div className="field"><label className="label" htmlFor="jf-sym">Symbol</label><select id="jf-sym" className="f" value={flt.symbol} onChange={set('symbol')}><option value="">All</option>{symbols.map((s) => <option key={s}>{s}</option>)}</select></div>
+          <div className="field"><label className="label" htmlFor="jf-str">Strategy</label><select id="jf-str" className="f" value={flt.strategy} onChange={set('strategy')}><option value="">All</option>{strategies.map((s) => <option key={s}>{s}</option>)}</select></div>
+          <div className="field"><label className="label" htmlFor="jf-side">Side</label><select id="jf-side" className="f" value={flt.side} onChange={set('side')}><option value="">All</option><option>BUY</option><option>SELL</option></select></div>
+          <div className="field"><label className="label" htmlFor="jf-from">From</label><input id="jf-from" className="f" type="date" value={flt.from} onChange={set('from')} /></div>
+          <div className="field"><label className="label" htmlFor="jf-to">To</label><input id="jf-to" className="f" type="date" value={flt.to} onChange={set('to')} /></div>
+          <div className="field"><label className="label" htmlFor="jf-res">Result</label><select id="jf-res" className="f" value={flt.result} onChange={set('result')}><option value="">All</option><option value="win">Wins (closing fills)</option><option value="loss">Losses (closing fills)</option></select></div>
+        </div>
+        <div className="tablewrap" style={{ maxHeight: 560 }}>
+          <table className="t">
+            <thead><tr><Th k="dt">Date</Th><Th k="symbol">Symbol</Th><Th k="side">Side</Th><Th k="qty" n>Qty</Th><Th k="price" n>Price</Th><Th k="strategy">Strategy</Th><Th k="realized" n>Realized</Th><th>Remarks</th></tr></thead>
+            <tbody>
+              {sorted.slice(0, limit).map((f) => {
+                const r = ledger.fillRealized[f.key];
+                return (
+                  <tr key={f.key}>
+                    <td>{fmtDate(f.date)} <span className="tiny muted">{f.time.slice(0, 5)}</span></td>
+                    <td><b>{positionLabel(f)}</b></td>
+                    <td><Pill kind={f.side === 'BUY' ? 'buy' : 'sell'}>{f.side}</Pill></td>
+                    <td className="n">{fmtNum(f.qty, 0)}</td><td className="n">{fmtNum(f.price)}</td>
+                    <td>{f.strategy || <span className="muted">—</span>}</td>
+                    <td className={'n ' + toneOf(r)}>{isNum(r) ? fmtSigned(r) : ''}</td>
+                    <td style={{ minWidth: 220 }}><input className="f" style={{ padding: '3px 6px' }} id={`rm-${f.key}`} aria-label="Remarks" value={remarks[f.key] ?? f.remarks ?? ''} onChange={(e) => setRemark(f.key, e.target.value)} placeholder="Add a note" /></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {sorted.length > limit && <button className="btn sm" style={{ marginTop: 10 }} onClick={() => setLimit(limit + 300)}>Show more ({sorted.length - limit} hidden)</button>}
+      </Card>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- charts */
+function TradeJourneyChart({ position }) {
+  const T = useTok();
+  if (!position) return null;
+  const data = position.fills.map((f) => ({ t: dayNum(f.date) * 864e5 + (f.time ? (+f.time.slice(0, 2) * 60 + +f.time.slice(3, 5)) * 6e4 : 0), price: f.price, side: f.side, qty: f.qty, date: f.date }));
+  const buys = data.filter((d) => d.side === 'BUY'), sells = data.filter((d) => d.side === 'SELL');
+  const Dot = (color, up) => (props) => {
+    const { cx, cy } = props; if (!isNum(cx) || !isNum(cy)) return null;
+    return <path d={up ? `M${cx},${cy - 7} L${cx + 6},${cy + 4} L${cx - 6},${cy + 4} Z` : `M${cx},${cy + 7} L${cx + 6},${cy - 4} L${cx - 6},${cy - 4} Z`} fill={color} stroke={T.card} strokeWidth={1} />;
+  };
+  return (
+    <div className="chartbox">
+      <ResponsiveContainer>
+        <ComposedChart data={data} margin={{ top: 12, right: 96, left: 0, bottom: 0 }}>
+          <CartesianGrid stroke={T.border} strokeDasharray="2 4" />
+          <XAxis dataKey="t" type="number" scale="time" domain={['dataMin - 86400000', 'dataMax + 86400000']} {...axisProps(T)} tickFormatter={(t) => fmtDateShort(fromDayNum(Math.floor(t / 864e5)))} minTickGap={30} />
+          <YAxis dataKey="price" domain={['auto', 'auto']} {...axisProps(T)} width={62} tickFormatter={(v) => fmtNum(v, 0)} />
+          <Tooltip {...tipStyle(T)} labelFormatter={(t) => fmtDate(fromDayNum(Math.floor(t / 864e5)))} formatter={(v, n, p) => [`${fmtNum(v)} × ${fmtNum(p.payload.qty, 0)}`, p.payload.side]} />
+          <Line dataKey="price" stroke={T.muted} strokeWidth={1} strokeDasharray="3 3" dot={false} isAnimationActive={false} />
+          {buys.length > 0 && <Scatter data={buys} dataKey="price" shape={Dot(T.pos, true)} isAnimationActive={false} />}
+          {sells.length > 0 && <Scatter data={sells} dataKey="price" shape={Dot(T.neg, false)} isAnimationActive={false} />}
+          {position.avgBuy && <ReferenceLine y={position.avgBuy} stroke={T.pos} strokeDasharray="5 4" label={{ value: `Avg buy ${fmtNum(position.avgBuy)}`, position: position.avgBuy < (position.avgSell || 0) ? 'insideBottomRight' : 'insideTopRight', fill: T.pos, fontSize: 10 }} />}
+          {position.avgSell && <ReferenceLine y={position.avgSell} stroke={T.neg} strokeDasharray="5 4" label={{ value: `Avg sell ${fmtNum(position.avgSell)}`, position: position.avgSell <= (position.avgBuy || 0) ? 'insideBottomRight' : 'insideTopRight', fill: T.neg, fontSize: 10 }} />}
+          {position.cmp && <ReferenceLine y={position.cmp} stroke={T.accent} label={{ value: `CMP ${fmtNum(position.cmp)}`, position: 'right', fill: T.accent, fontSize: 10 }} />}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+let lwPromise = null;
+function loadLightweightCharts() {
+  if (window.LightweightCharts) return Promise.resolve(window.LightweightCharts);
+  if (lwPromise) return lwPromise;
+  const urls = ['https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js',
+    'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js'];
+  lwPromise = new Promise((resolve, reject) => {
+    const tryAt = (i) => {
+      if (i >= urls.length) { lwPromise = null; reject(new Error('blocked')); return; }
+      const s = document.createElement('script');
+      s.src = urls[i]; s.async = true;
+      const timer = setTimeout(() => { s.onerror = s.onload = null; tryAt(i + 1); }, 8000);
+      s.onload = () => { clearTimeout(timer); window.LightweightCharts ? resolve(window.LightweightCharts) : tryAt(i + 1); };
+      s.onerror = () => { clearTimeout(timer); tryAt(i + 1); };
+      document.head.appendChild(s);
+    };
+    tryAt(0);
+  });
+  return lwPromise;
+}
+
+function RechartsCandles({ candles, markers }) {
+  const T = useTok();
+  const data = candles.map((c) => ({ ...c, range: [c.low, c.high] }));
+  const Candle = (props) => {
+    const { x, y, width, height, payload } = props;
+    if (!payload || !isNum(height)) return null;
+    const { open, close, high, low } = payload;
+    const ppu = (high - low) ? height / (high - low) : 0;
+    const top = y + (high - Math.max(open, close)) * ppu, bot = y + (high - Math.min(open, close)) * ppu;
+    const col = close >= open ? T.pos : T.neg, cx = x + width / 2, w = Math.max(1, width * 0.7);
+    return <g><line x1={cx} x2={cx} y1={y} y2={y + height} stroke={col} /><rect x={cx - w / 2} y={top} width={w} height={Math.max(1, bot - top)} fill={col} /></g>;
+  };
+  const mk = Object.fromEntries(markers.map((m) => [m.time, m]));
+  return (
+    <div className="chartbox">
+      <ResponsiveContainer>
+        <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid stroke={T.border} strokeDasharray="2 4" vertical={false} />
+          <XAxis dataKey="time" {...axisProps(T)} tickFormatter={fmtDateShort} minTickGap={30} />
+          <YAxis domain={['auto', 'auto']} {...axisProps(T)} width={62} tickFormatter={(v) => fmtNum(v, 0)} />
+          <Tooltip {...tipStyle(T)} labelFormatter={(l) => fmtDate(l) + (mk[l] ? ` · ${mk[l].text}` : '')} formatter={(v, n, p) => n === 'range' ? [`O ${fmtNum(p.payload.open)} H ${fmtNum(p.payload.high)} L ${fmtNum(p.payload.low)} C ${fmtNum(p.payload.close)}`, ''] : [v, n]} />
+          <Bar dataKey="range" shape={<Candle />} isAnimationActive={false} />
+          {markers.map((m, i) => <ReferenceLine key={i} x={m.time} stroke={m.side === 'BUY' ? T.pos : T.neg} strokeDasharray="2 3" strokeOpacity={0.7} />)}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function CandleChart({ symbol, candles, position }) {
+  const T = useTok();
+  const ref = useRef(null);
+  const [lib, setLib] = useState(window.LightweightCharts ? 'ready' : 'loading');
+  useEffect(() => { if (!candles?.length) return; loadLightweightCharts().then(() => setLib('ready'), () => setLib('blocked')); }, [candles]);
+  const markers = useMemo(() => {
+    if (!position) return [];
+    const byDay = {};
+    position.fills.forEach((f) => { const k = f.date + f.side; byDay[k] = byDay[k] || { time: f.date, side: f.side, qty: 0 }; byDay[k].qty += f.qty; });
+    return Object.values(byDay).sort((a, b) => a.time.localeCompare(b.time)).map((m) => ({ ...m, text: `${m.side === 'BUY' ? 'B' : 'S'} ${fmtNum(m.qty, 0)}` }));
+  }, [position]);
+  useEffect(() => {
+    if (lib !== 'ready' || !candles?.length || !ref.current) return;
+    const LW = window.LightweightCharts;
+    const chart = LW.createChart(ref.current, {
+      autoSize: true, layout: { background: { color: T.card }, textColor: T.muted, fontFamily: 'IBM Plex Mono, monospace' },
+      grid: { vertLines: { color: T.border }, horzLines: { color: T.border } }, rightPriceScale: { borderColor: T.border }, timeScale: { borderColor: T.border },
+    });
+    const series = chart.addCandlestickSeries({ upColor: T.pos, downColor: T.neg, borderVisible: false, wickUpColor: T.pos, wickDownColor: T.neg });
+    series.setData(candles);
+    const days = new Set(candles.map((c) => c.time));
+    series.setMarkers(markers.filter((m) => days.has(m.time)).map((m) => ({ time: m.time, position: m.side === 'BUY' ? 'belowBar' : 'aboveBar', color: m.side === 'BUY' ? T.pos : T.neg, shape: m.side === 'BUY' ? 'arrowUp' : 'arrowDown', text: m.text })));
+    if (position?.avgBuy) series.createPriceLine({ price: position.avgBuy, color: T.pos, lineStyle: 2, lineWidth: 1, title: 'avg buy' });
+    if (position?.avgSell) series.createPriceLine({ price: position.avgSell, color: T.neg, lineStyle: 2, lineWidth: 1, title: 'avg sell' });
+    chart.timeScale().fitContent();
+    return () => chart.remove();
+  }, [lib, candles, markers, T, position]);
+  if (!candles?.length) return <div className="note info">No OHLC data for {symbol}. Candles need prices from your API or SEED_DATA (a <code>candles</code> key). The trade-journey chart above still shows your fills.</div>;
+  if (lib === 'blocked') return <><div className="note">TradingView Lightweight Charts could not load (blocked by the sandbox CSP), so this is the built-in fallback.</div><RechartsCandles candles={candles} markers={markers} /></>;
+  if (lib === 'loading') return <div className="muted small"><Icon name="Loader2" className="spin" size={14} /> Loading TradingView Lightweight Charts…</div>;
+  return <div ref={ref} className="lwbox" />;
+}
+
+function EquityCurve({ ledger, startCapital }) {
+  const T = useTok();
+  const data = useMemo(() => {
+    const m = {};
+    ledger.closedTrades.forEach((t) => { m[t.exitDate] = (m[t.exitDate] || 0) + t.pnl; });
+    let c = startCapital || 0, peak = -Infinity;
+    return Object.entries(m).sort().map(([date, p]) => { c += p; peak = Math.max(peak, c); return { date, equity: c, dd: c - peak }; });
+  }, [ledger, startCapital]);
+  if (!data.length) return <div className="muted small">No closed trades yet.</div>;
+  return (
+    <div className="chartbox">
+      <ResponsiveContainer>
+        <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <defs><linearGradient id="eqfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={T.accent} stopOpacity={0.35} /><stop offset="100%" stopColor={T.accent} stopOpacity={0} /></linearGradient></defs>
+          <CartesianGrid stroke={T.border} strokeDasharray="2 4" vertical={false} />
+          <XAxis dataKey="date" {...axisProps(T)} tickFormatter={fmtDateShort} minTickGap={30} />
+          <YAxis {...axisProps(T)} tickFormatter={compactINR} width={66} domain={['auto', 'auto']} />
+          <Tooltip {...tipStyle(T)} labelFormatter={fmtDate} formatter={(v, n, p) => [`${fmtINR(v)}${p.payload.dd < 0 ? ` (drawdown ${fmtINR(p.payload.dd)})` : ''}`, startCapital ? 'Equity' : 'Cumulative realized']} />
+          <Area dataKey="equity" stroke={T.accent} strokeWidth={2} fill="url(#eqfill)" isAnimationActive={false} />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function SectorDonut({ positions }) {
+  const T = useTok();
+  const open = positions.filter((p) => p.openQty > 1e-9);
+  const basis = open.length ? 'open value' : 'traded value';
+  const data = useMemo(() => {
+    const m = {};
+    (open.length ? open : positions).forEach((p) => { const k = p.sector || 'Unassigned'; m[k] = (m[k] || 0) + (open.length ? p.marketValue : p.buyVal + p.sellVal); });
+    return Object.entries(m).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [positions]);
+  const tot = sum(data, (d) => d.value);
+  return (
+    <div className="row" style={{ alignItems: 'stretch' }}>
+      <div style={{ width: 200, height: 200, flex: '0 0 auto', maxWidth: '100%' }}>
+        <ResponsiveContainer>
+          <PieChart><Pie data={data} dataKey="value" nameKey="name" innerRadius={58} outerRadius={92} paddingAngle={2} stroke={T.card} isAnimationActive={false}>
+            {data.map((d, i) => <Cell key={d.name} fill={T.cat[i % 8]} />)}</Pie>
+            <Tooltip {...tipStyle(T)} formatter={(v) => [`${fmtINR(v)} · ${((v / tot) * 100).toFixed(1)}%`]} /></PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="stack grow" style={{ gap: 6, justifyContent: 'center' }}>
+        <div className="tiny muted">By {basis}</div>
+        {data.map((d, i) => <div key={d.name} className="row small" style={{ gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: T.cat[i % 8] }} /><span className="grow">{d.name}</span><span className="mono">{((d.value / tot) * 100).toFixed(1)}%</span></div>)}
+      </div>
+    </div>
+  );
+}
+
+function MonthlyPnl({ trades }) {
+  const T = useTok();
+  const data = useMemo(() => {
+    const m = {};
+    trades.forEach((t) => { const k = t.exitDate.slice(0, 7); m[k] = (m[k] || 0) + t.pnl; });
+    return Object.entries(m).sort().map(([month, pnl]) => ({ month, pnl }));
+  }, [trades]);
+  const lab = (k) => { const [y, mo] = k.split('-'); return `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+mo - 1]} ${y.slice(2)}`; };
+  return (
+    <div className="chartbox sm">
+      <ResponsiveContainer>
+        <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid stroke={T.border} strokeDasharray="2 4" vertical={false} />
+          <XAxis dataKey="month" {...axisProps(T)} tickFormatter={lab} />
+          <YAxis {...axisProps(T)} tickFormatter={compactINR} width={62} />
+          <Tooltip {...tipStyle(T)} labelFormatter={lab} formatter={(v) => [fmtSigned(v), 'Realized']} cursor={{ fill: T.card2 }} />
+          <ReferenceLine y={0} stroke={T.border} />
+          <Bar dataKey="pnl" radius={[3, 3, 0, 0]} isAnimationActive={false}>{data.map((d) => <Cell key={d.month} fill={d.pnl >= 0 ? T.pos : T.neg} />)}</Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function Charts({ ledger, candles, startCapital }) {
+  const opts = ledger.positions;
+  const [sel, setSel] = useState(opts[0]?.key || '');
+  const pos = opts.find((p) => p.key === sel) || opts[0];
+  const c = pos ? candles[pos.key] || (pos.kind === 'EQ' ? candles[pos.symbol] : null) : null;
+  return (
+    <div className="stack">
+      <Card title="Trade journey" right={<select className="f" id="journey-symbol" aria-label="Symbol" style={{ width: 'auto' }} value={pos?.key || ''} onChange={(e) => setSel(e.target.value)}>
+        {opts.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}</select>}>
+        {pos && <div className="row small" style={{ marginBottom: 8, gap: 16 }}>
+          <span><span className="pos">▲</span> buy</span><span><span className="neg">▼</span> sell</span>
+          <span className="muted">Avg buy <span className="mono">{fmtNum(pos.avgBuy)}</span></span><span className="muted">Avg sell <span className="mono">{fmtNum(pos.avgSell)}</span></span>
+          <span className="muted">CMP <span className="mono">{fmtNum(pos.cmp)}</span></span>
+          <span className={toneOf(pos.total)}>Total {fmtSigned(pos.total)}</span>
+        </div>}
+        <TradeJourneyChart position={pos} />
+      </Card>
+      <Card title={`Candles · ${pos?.label || ''}`}><CandleChart symbol={pos?.label} candles={c} position={pos} /></Card>
+      <Card title="Equity curve" right={<span className="tiny muted">{startCapital ? 'Starting capital + cumulative realized' : 'Cumulative realized (set starting capital for equity)'}</span>}><EquityCurve ledger={ledger} startCapital={startCapital} /></Card>
+      <div className="grid2">
+        <Card title="Sector allocation"><SectorDonut positions={ledger.positions} /></Card>
+        <Card title="Monthly realized P&L"><MonthlyPnl trades={ledger.closedTrades} /></Card>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- mind */
+const HOLD_BUCKETS = [
+  { k: 'Intraday', t: (d) => d === 0 }, { k: '1d', t: (d) => d === 1 }, { k: '2d', t: (d) => d === 2 }, { k: '3–5', t: (d) => d >= 3 && d <= 5 },
+  { k: '6–10', t: (d) => d >= 6 && d <= 10 }, { k: '11–21', t: (d) => d >= 11 && d <= 21 }, { k: '22–63', t: (d) => d >= 22 && d <= 63 }, { k: '63+', t: (d) => d > 63 },
+];
+
+function HoldLab({ ledger }) {
+  const T = useTok();
+  const trades = ledger.closedTrades;
+  const losers = trades.filter((t) => t.pnl < 0);
+  const rows = HOLD_BUCKETS.map((b) => {
+    const all = trades.filter((t) => b.t(t.holdDays)), ls = all.filter((t) => t.pnl < 0);
+    return { bucket: b.k, n: all.length, losers: ls.length, total: sum(ls, (t) => t.pnl), avg: ls.length ? sum(ls, (t) => t.pnl) / ls.length : null, winRate: all.length ? ((all.length - ls.length) / all.length) * 100 : null };
+  });
+  const base = rows.find((r) => r.avg !== null);
+  rows.forEach((r) => { r.esc = base && r.avg !== null ? r.avg / base.avg : null; r.absAvg = r.avg !== null ? -r.avg : 0; });
+  const openLosers = ledger.positions.filter((p) => p.openQty > 1e-9 && p.hasCmp && p.unrealized < 0);
+  const noCmp = ledger.positions.filter((p) => p.openQty > 1e-9 && !p.hasCmp).length;
+  const intra = rows[0];
+  const byStrat = {};
+  losers.forEach((t) => { byStrat[t.strategy] = (byStrat[t.strategy] || 0) + t.pnl; });
+  const stratRows = Object.entries(byStrat).sort((a, b) => a[1] - b[1]);
+  const totLoss = sum(losers, (t) => t.pnl);
+  const maxIdx = rows.length - 1;
+  return (
+    <div className="stack">
+      <div className="kpis">
+        <KpiCard label="Closed losers" value={losers.length} hint={`of ${trades.length} closed trades`} />
+        <KpiCard label="Total realised loss" value={fmtINR(totLoss)} tone="neg" />
+        <KpiCard label="Intraday avg loss" value={intra.avg !== null ? fmtINR(intra.avg) : '—'} tone={intra.avg !== null ? 'neg' : ''} hint={`${intra.losers} intraday losers`} />
+        <KpiCard label="Still-held losers" value={openLosers.length} hint={noCmp ? `${noCmp} open without CMP` : 'open at a loss now'} />
+        <KpiCard label="Open loss carried" value={openLosers.length ? fmtINR(sum(openLosers, (p) => p.unrealized)) : '—'} tone={openLosers.length ? 'neg' : ''} />
+      </div>
+      <div className="grid2">
+        <Card title="Average loss by holding period">
+          <div className="chartbox">
+            <ResponsiveContainer>
+              <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 0 }}>
+                <CartesianGrid stroke={T.border} strokeDasharray="2 4" horizontal={false} />
+                <XAxis type="number" {...axisProps(T)} tickFormatter={compactINR} />
+                <YAxis type="category" dataKey="bucket" {...axisProps(T)} width={62} />
+                <Tooltip {...tipStyle(T)} cursor={{ fill: T.card2 }} formatter={(v, n, p) => [`${fmtINR(-v)} avg · ${p.payload.losers} losers`, p.payload.bucket]} />
+                <Bar dataKey="absAvg" radius={[0, 3, 3, 0]} isAnimationActive={false}>{rows.map((r, i) => <Cell key={r.bucket} fill={T.neg} fillOpacity={0.3 + (0.7 * i) / maxIdx} />)}</Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card title="Buckets">
+          <div className="tablewrap"><table className="t">
+            <thead><tr><th>Hold</th><th className="n">Losers</th><th className="n">Avg loss</th><th className="n">Escalation</th><th className="n">Win rate</th></tr></thead>
+            <tbody>{rows.map((r) => <tr key={r.bucket}><td>{r.bucket}</td><td className="n">{r.losers}<span className="muted tiny">/{r.n}</span></td><td className="n neg">{r.avg !== null ? fmtINR(r.avg) : '—'}</td>
+              <td className={'n ' + (r.esc > 1.5 ? 'neg' : '')}>{r.esc !== null ? r.esc.toFixed(2) + '×' : '—'}</td><td className="n">{r.winRate !== null ? r.winRate.toFixed(0) + '%' : '—'}</td></tr>)}</tbody>
+          </table></div>
+          <div className="tiny muted" style={{ marginTop: 8 }}>Escalation = bucket's avg loss ÷ {base?.bucket || 'first'} avg loss. Hold time is the quantity-weighted days between entry lots and the closing fill.</div>
+        </Card>
+      </div>
+      <Card title="Where the losses came from (by strategy)">
+        {stratRows.length ? <div className="stack" style={{ gap: 8 }}>{stratRows.map(([s, v]) => (
+          <div key={s} className="row small"><span style={{ width: 120 }}>{s}</span>
+            <div className="grow" style={{ background: T.card2, borderRadius: 4, height: 10 }}><div style={{ width: `${(v / totLoss) * 100}%`, height: '100%', background: T.neg, borderRadius: 4 }} /></div>
+            <span className="mono" style={{ width: 120, textAlign: 'right' }}>{fmtINR(v)}</span><span className="mono muted" style={{ width: 52, textAlign: 'right' }}>{((v / totLoss) * 100).toFixed(0)}%</span></div>))}</div>
+          : <div className="muted small">No closed losers.</div>}
+      </Card>
+    </div>
+  );
+}
+
+function StrategyBreakdown({ ledger }) {
+  const rows = useMemo(() => {
+    const m = {};
+    ledger.closedTrades.forEach((t) => { const s = (m[t.strategy] = m[t.strategy] || { strategy: t.strategy, trades: [] }); s.trades.push(t); });
+    ledger.positions.forEach((p) => { const k = p.strategy || 'Unassigned'; m[k] = m[k] || { strategy: k, trades: [] }; });
+    return Object.values(m).map((s) => {
+      const w = s.trades.filter((t) => t.pnl > 0), l = s.trades.filter((t) => t.pnl < 0);
+      const openLoss = sum(ledger.positions.filter((p) => (p.strategy || 'Unassigned') === s.strategy && p.openQty > 1e-9 && p.unrealized < 0), (p) => p.unrealized);
+      return { strategy: s.strategy, count: s.trades.length, winRate: s.trades.length ? (w.length / s.trades.length) * 100 : null, net: sum(s.trades, (t) => t.net),
+        gross: sum(s.trades, (t) => t.pnl), avgWin: w.length ? sum(w, (t) => t.pnl) / w.length : null, avgLoss: l.length ? sum(l, (t) => t.pnl) / l.length : null, openLoss };
+    }).sort((a, b) => b.net - a.net);
+  }, [ledger]);
+  const { sorted, Th } = useSort(rows, null, {});
+  return (
+    <Card title="Strategy-wise">
+      <div className="tablewrap"><table className="t">
+        <thead><tr><Th k="strategy">Strategy</Th><Th k="count" n>Trades</Th><Th k="winRate" n>Win rate</Th><Th k="gross" n>Gross P&amp;L</Th><Th k="net" n>Net P&amp;L</Th><Th k="avgWin" n>Avg win</Th><Th k="avgLoss" n>Avg loss</Th><Th k="openLoss" n>Open loss held</Th></tr></thead>
+        <tbody>{sorted.map((r) => <tr key={r.strategy}><td><b>{r.strategy}</b></td><td className="n">{r.count}</td><td className="n">{r.winRate !== null ? r.winRate.toFixed(0) + '%' : '—'}</td>
+          <td className={'n ' + toneOf(r.gross)}>{fmtSigned(r.gross)}</td><td className={'n ' + toneOf(r.net)}>{fmtSigned(r.net)}</td><td className="n pos">{fmtINR(r.avgWin)}</td><td className="n neg">{fmtINR(r.avgLoss)}</td>
+          <td className={'n ' + toneOf(r.openLoss)}>{r.openLoss ? fmtINR(r.openLoss) : '—'}</td></tr>)}</tbody>
+      </table></div>
+    </Card>
+  );
+}
+
+function Churn({ ledger }) {
+  const intra = ledger.closedTrades.filter((t) => t.intraday);
+  const gross = sum(intra, (t) => t.pnl), ch = sum(intra, (t) => t.charges), net = gross - ch;
+  return (
+    <Card title="Churn (intraday round-trips)">
+      <div className="kpis">
+        <KpiCard label="Round-trips" value={intra.length} hint={`${ledger.closedTrades.length ? ((intra.length / ledger.closedTrades.length) * 100).toFixed(0) : 0}% of closed trades`} />
+        <KpiCard label="Gross intraday P&L" value={fmtSigned(gross)} tone={toneOf(gross)} />
+        <KpiCard label="Charges drag" value={fmtINR(ch)} tone={ch ? 'warn' : ''} hint={gross ? `${Math.abs((ch / gross) * 100).toFixed(0)}% of gross` : ''} />
+        <KpiCard label="Net leak" value={fmtSigned(net)} tone={toneOf(net)} hint="gross − charges" />
+      </div>
+    </Card>
+  );
+}
+
+function Leaderboard({ ledger }) {
+  const [by, setBy] = useState('inr');
+  const ps = ledger.positions.filter((p) => isNum(by === 'inr' ? p.total : p.returnPct));
+  const key = by === 'inr' ? 'total' : 'returnPct';
+  const win = [...ps].filter((p) => p[key] > 0).sort((a, b) => b[key] - a[key]).slice(0, 5);
+  const lose = [...ps].filter((p) => p[key] < 0).sort((a, b) => a[key] - b[key]).slice(0, 5);
+  const List = ({ items, tone }) => (
+    <div className="stack" style={{ gap: 6 }}>{items.length ? items.map((p, i) => (
+      <div key={p.key} className="row small"><span className="mono muted" style={{ width: 18 }}>{i + 1}</span><b className="grow">{p.label}</b>
+        <span className={'mono ' + tone}>{by === 'inr' ? fmtSigned(p.total) : fmtPct(p.returnPct)}</span><span className="mono muted tiny" style={{ width: 80, textAlign: 'right' }}>{by === 'inr' ? fmtPct(p.returnPct) : fmtSigned(p.total)}</span></div>))
+      : <div className="muted small">None</div>}</div>
+  );
+  return (
+    <Card title="Winners and losers" right={<Seg value={by} options={[['inr', 'By ₹'], ['pct', 'By %']]} onChange={setBy} />}>
+      <div className="grid2"><div><div className="label" style={{ marginBottom: 8 }}>Top winners</div><List items={win} tone="pos" /></div><div><div className="label" style={{ marginBottom: 8 }}>Top losers</div><List items={lose} tone="neg" /></div></div>
+    </Card>
+  );
+}
+
+function Mind({ ledger }) {
+  if (!ledger.closedTrades.length) return <div className="empty"><Icon name="Brain" size={26} /><div>Mind analytics need closed trades. Nothing has been closed yet.</div></div>;
+  return <div className="stack"><HoldLab ledger={ledger} /><StrategyBreakdown ledger={ledger} /><Churn ledger={ledger} /><Leaderboard ledger={ledger} /></div>;
+}
+
+/* ------------------------------------------------------- simulator */
+const SCENARIO_TYPES = {
+  sl1r: { label: 'Fixed stop at −1R', param: 'R as % of entry (if no stop-loss)', def: 2 },
+  skipDay: { label: 'Skip a weekday', param: 'Weekday (entry day)', def: 1 },
+  holdWinners: { label: 'Hold winners +N days', param: 'Extra days', def: 5 },
+  skipStreak: { label: 'Pause after loss streak', param: 'Losses in a row (skip next trade)', def: 2 },
+  capSize: { label: 'Cap position size', param: 'Max ₹ per trade', def: 100000 },
+};
+
+function runScenario(trades, sc, candles) {
+  const out = []; let streak = 0, skipNext = 0, missing = 0, changed = 0;
+  const p = num(sc.param);
+  trades.forEach((t) => {
+    let pnl = t.pnl, take = true;
+    if (sc.type === 'skipDay' && t.entryWeekday === p) take = false;
+    if (sc.type === 'skipStreak') { if (skipNext > 0) { take = false; skipNext--; } }
+    if (take && sc.type === 'sl1r') {
+      const R = isNum(t.stopLoss) ? Math.abs(t.entryPrice - t.stopLoss) * t.qty : (t.entryValue * (isNum(p) ? p : 2)) / 100;
+      if (pnl < -R) { pnl = -R; changed++; }
+    }
+    if (take && sc.type === 'capSize' && isNum(p) && p > 0 && t.entryValue > p) { pnl = pnl * (p / t.entryValue); changed++; }
+    if (take && sc.type === 'holdWinners' && t.pnl > 0) {
+      const cs = candles[t.posKey] || candles[t.symbol];
+      if (cs?.length) {
+        const target = fromDayNum(dayNum(t.exitDate) + (isNum(p) ? p : 0));
+        const c = cs.find((x) => x.time >= target);
+        if (c) { pnl = (c.close - t.entryPrice) * t.qty * t.dir; changed++; } else missing++;
+      } else missing++;
+    }
+    if (!take) { changed++; return; }
+    out.push({ ...t, pnl });
+    if (sc.type === 'skipStreak') { streak = pnl < 0 ? streak + 1 : 0; if (streak >= (isNum(p) ? p : 2)) { skipNext = 1; streak = 0; } }
+  });
+  let cum = 0, peak = 0, mdd = 0;
+  out.forEach((t) => { cum += t.pnl; peak = Math.max(peak, cum); mdd = Math.min(mdd, cum - peak); });
+  return { total: cum, n: out.length, winRate: out.length ? (out.filter((t) => t.pnl > 0).length / out.length) * 100 : null, mdd, missing, changed };
+}
+
+function Simulator({ ledger, candles, riskPct }) {
+  const T = useTok();
+  const [scs, setScs] = useState(() => [
+    { id: uid(), type: 'sl1r', param: riskPct || 2 }, { id: uid(), type: 'skipDay', param: 1 },
+    { id: uid(), type: 'skipStreak', param: 2 }, { id: uid(), type: 'capSize', param: 100000 },
+  ]);
+  const trades = ledger.closedTrades;
+  const actual = useMemo(() => runScenario(trades, { type: 'none' }, candles), [trades, candles]);
+  const results = useMemo(() => scs.map((s) => ({ ...s, r: runScenario(trades, s, candles) })), [scs, trades, candles]);
+  const upd = (id, k, v) => setScs(scs.map((s) => (s.id === id ? { ...s, [k]: v, ...(k === 'type' ? { param: SCENARIO_TYPES[v].def } : {}) } : s)));
+  const chart = [{ name: 'Actual', total: actual.total }, ...results.map((s, i) => ({ name: `S${i + 1}`, total: s.r.total }))];
+  if (!trades.length) return <div className="empty"><Icon name="FlaskConical" size={26} /><div>The simulator replays closed trades. Nothing has been closed yet.</div></div>;
+  return (
+    <div className="stack">
+      <Card title="Scenarios" right={<button className="btn sm" disabled={scs.length >= 6} onClick={() => setScs([...scs, { id: uid(), type: 'holdWinners', param: 5 }])}><Icon name="Plus" size={14} /> Add scenario</button>}>
+        <div className="stack" style={{ gap: 8 }}>
+          {scs.map((s, i) => (
+            <div key={s.id} className="row">
+              <span className="mono acc" style={{ width: 26 }}>S{i + 1}</span>
+              <select className="f" style={{ width: 'auto', flex: '1 1 200px' }} id={`sc-type-${s.id}`} aria-label="Scenario rule" value={s.type} onChange={(e) => upd(s.id, 'type', e.target.value)}>
+                {Object.entries(SCENARIO_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
+              {s.type === 'skipDay'
+                ? <select className="f" style={{ width: 'auto', flex: '1 1 140px' }} id={`sc-p-${s.id}`} aria-label={SCENARIO_TYPES[s.type].param} value={s.param} onChange={(e) => upd(s.id, 'param', +e.target.value)}>{WEEKDAYS.map((d, k) => <option key={k} value={k}>{d}</option>)}</select>
+                : <input className="f mono" style={{ width: 'auto', flex: '1 1 140px' }} id={`sc-p-${s.id}`} aria-label={SCENARIO_TYPES[s.type].param} title={SCENARIO_TYPES[s.type].param} inputMode="decimal" value={s.param} onChange={(e) => upd(s.id, 'param', e.target.value)} />}
+              <span className="tiny muted" style={{ flex: '1 1 160px' }}>{SCENARIO_TYPES[s.type].param}</span>
+              <button className="iconbtn" aria-label="Remove scenario" onClick={() => setScs(scs.filter((x) => x.id !== s.id))}><Icon name="Trash2" size={14} /></button>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <div className="grid2">
+        <Card title="Total realized P&L">
+          <div className="chartbox sm">
+            <ResponsiveContainer>
+              <BarChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid stroke={T.border} strokeDasharray="2 4" vertical={false} />
+                <XAxis dataKey="name" {...axisProps(T)} /><YAxis {...axisProps(T)} tickFormatter={compactINR} width={62} />
+                <Tooltip {...tipStyle(T)} cursor={{ fill: T.card2 }} formatter={(v) => [fmtSigned(v), 'P&L']} />
+                <ReferenceLine y={0} stroke={T.border} /><ReferenceLine y={actual.total} stroke={T.accent} strokeDasharray="4 4" />
+                <Bar dataKey="total" radius={[3, 3, 0, 0]} isAnimationActive={false}>{chart.map((d, i) => <Cell key={i} fill={i === 0 ? T.accent : d.total >= actual.total ? T.pos : T.neg} />)}</Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card title="Side by side">
+          <div className="tablewrap"><table className="t">
+            <thead><tr><th>Book</th><th className="n">P&amp;L</th><th className="n">Δ vs actual</th><th className="n">Trades</th><th className="n">Win %</th><th className="n">Max DD</th></tr></thead>
+            <tbody>
+              <tr><td><b className="acc">Actual</b></td><td className={'n ' + toneOf(actual.total)}>{fmtSigned(actual.total)}</td><td className="n muted">—</td><td className="n">{actual.n}</td><td className="n">{actual.winRate?.toFixed(0)}%</td><td className="n neg">{fmtINR(actual.mdd)}</td></tr>
+              {results.map((s, i) => { const d = s.r.total - actual.total; return (
+                <tr key={s.id}><td><span className="mono acc">S{i + 1}</span> <span className="small">{SCENARIO_TYPES[s.type].label}{s.type === 'skipDay' ? ` (${WEEKDAYS[s.param]})` : ''}</span>
+                  {s.r.missing > 0 && <div className="tiny warn">{s.r.missing} winners had no later prices, left unchanged</div>}</td>
+                  <td className={'n ' + toneOf(s.r.total)}>{fmtSigned(s.r.total)}</td><td className={'n ' + toneOf(d)}>{fmtSigned(d)}</td><td className="n">{s.r.n}</td>
+                  <td className="n">{s.r.winRate !== null ? s.r.winRate.toFixed(0) + '%' : '—'}</td><td className="n neg">{fmtINR(s.r.mdd)}</td></tr>); })}
+            </tbody>
+          </table></div>
+        </Card>
+      </div>
+      <div className="tiny muted">Replays your {trades.length} closed trades in close-date order, gross of charges. Nothing in your book is changed. “Hold winners” needs OHLC candles for the symbol; “Pause after loss streak” skips the one trade that follows the streak.</div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------- app shell */
+const TABS = [
+  { id: 'overview', label: 'Overview', icon: 'LayoutDashboard' }, { id: 'holdings', label: 'Holdings', icon: 'Briefcase' },
+  { id: 'journal', label: 'Journal', icon: 'NotebookPen' }, { id: 'charts', label: 'Charts', icon: 'CandlestickChart' },
+  { id: 'mind', label: 'Mind', icon: 'Brain' }, { id: 'simulator', label: 'Simulator', icon: 'FlaskConical' },
+];
+
+function seedSources() {
+  if (!SEED_DATA) return [];
+  try {
+    const { rows, prices, candles } = extractPayload(SEED_DATA);
+    return [makeSource({ kind: 'seed', name: 'SEED_DATA', raw: rawFromObjects(rows), extra: { prices, candles } })];
+  } catch (e) { console.error('SEED_DATA could not be read', e); return []; }
+}
+
+function App() {
+  const [theme, setTheme] = useState('dark');
+  const [tokens, setTokens] = useState(null);
+  const [tab, setTab] = useState(() => { const h = location.hash.replace('#', ''); return TABS.some((t) => t.id === h) ? h : 'overview'; });
+  const [sources, setSources] = useState(seedSources);
+  const [manual, setManual] = useState([]);
+  const [remarks, setRemarks] = useState({});
+  const [cmpOverrides, setCmpOverrides] = useState({});
+  const [settings, setSettings] = useState({ startCapital: '', startDate: '', portfolioOverride: '', flows: [], chargeRate: '0', riskPct: '2' });
+  const [apiCfg, setApiCfg] = useState({ baseUrl: '', path: '/trades?from={from}&to={to}', auth: 'bearer', headerName: 'x-api-key', token: '', from: '', to: '' });
+  const [panel, setPanel] = useState(null); // 'settings' | 'api' | 'columns'
+  const [dragging, setDragging] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => { document.documentElement.setAttribute('data-theme', theme); setTokens(readTokens()); }, [theme]);
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 4500); return () => clearTimeout(t); }, [toast]);
+
+  const addFiles = useCallback(async (files) => {
+    const added = [], bad = [];
+    for (const file of files) {
+      try {
+        const text = await readFileText(file);
+        const raw = rawFromCSV(text);
+        if (!raw.rows.length) { bad.push(file.name); continue; }
+        added.push(makeSource({ kind: 'csv', name: file.name || String(file), raw }));
+      } catch (e) { bad.push(file.name || String(file)); }
+    }
+    if (added.length) setSources((s) => [...s, ...added]);
+    setToast(bad.length ? { kind: 'err', msg: `Could not read ${bad.join(', ')}. Is it a CSV with a header row?` } : { kind: 'ok', msg: `Loaded ${added.map((a) => `${a.name} (${a.raw.rows.length} rows)`).join(', ')}` });
+  }, []);
+  const readNamed = useCallback(async (name) => {
+    try { const text = await window.fs.readFile(name, { encoding: 'utf8' }); setSources((s) => [...s, makeSource({ kind: 'csv', name, raw: rawFromCSV(text) })]); }
+    catch (e) { setToast({ kind: 'err', msg: `Could not read ${name}` }); }
+  }, []);
+  const onFetched = useCallback(({ rows, prices, candles, name }) => {
+    const src = makeSource({ kind: 'api', name, raw: rawFromObjects(rows), extra: { prices, candles } });
+    setSources((s) => [...s, src]);
+    return normalizeSource(src).fills.length;
+  }, []);
+  const loadSample = () => {
+    const raw = makeSampleData();
+    setSources((s) => [...s.filter((x) => x.kind !== 'sample'), makeSource({ kind: 'sample', name: 'Sample data', raw, extra: { candles: raw.candles } })]);
+    setSettings((st) => ({ ...st, startCapital: st.startCapital || '1000000', startDate: st.startDate || '2025-10-01',
+      flows: st.flows.length ? st.flows : [{ id: uid(), date: '2025-10-01', amount: '1000000', type: 'Pay-in' }, { id: uid(), date: '2026-03-02', amount: '250000', type: 'Pay-in' }, { id: uid(), date: '2026-07-15', amount: '150000', type: 'Payout' }] }));
+  };
+
+  // global drag-drop
+  useEffect(() => {
+    let depth = 0;
+    const enter = (e) => { if (e.dataTransfer?.types?.includes('Files')) { depth++; setDragging(true); } };
+    const leave = () => { depth = Math.max(0, depth - 1); if (!depth) setDragging(false); };
+    const over = (e) => e.preventDefault();
+    const drop = (e) => { e.preventDefault(); depth = 0; setDragging(false); if (e.dataTransfer?.files?.length) addFiles([...e.dataTransfer.files]); };
+    window.addEventListener('dragenter', enter); window.addEventListener('dragleave', leave); window.addEventListener('dragover', over); window.addEventListener('drop', drop);
+    return () => { window.removeEventListener('dragenter', enter); window.removeEventListener('dragleave', leave); window.removeEventListener('dragover', over); window.removeEventListener('drop', drop); };
+  }, [addFiles]);
+
+  /* ---- derived pipeline: sources → normalized fills → merged → ledger → metrics ---- */
+  const normalized = useMemo(() => sources.map((s) => ({ src: s, ...normalizeSource(s) })), [sources]);
+  const manualFills = useMemo(() => manual.map((m, i) => ({ source: 'manual', seq: i, symbol: m.symbol, side: m.side, qty: m.qty, price: m.price, date: m.date, time: '',
+    series: '', exchange: '', instrument_type: '', expiry: '', strike: null, option_type: '', strategy: m.strategy, sector: m.sector, charges: null,
+    current_price: NaN, prev_close: NaN, stop_loss: m.stop_loss, target: m.target, remarks: m.remarks, order_id: '', trade_id: `manual-${m.id}` })), [manual]);
+  const merged = useMemo(() => mergeFills([...normalized, { fills: manualFills }]), [normalized, manualFills]);
+  const prices = useMemo(() => Object.assign({}, ...sources.map((s) => s.extra?.prices || {})), [sources]);
+  const candles = useMemo(() => Object.assign({}, ...sources.map((s) => s.extra?.candles || {})), [sources]);
+  const ledger = useMemo(() => buildLedger(merged.fills, { chargeRate: num(settings.chargeRate) || 0, prices, cmpOverrides }), [merged, settings.chargeRate, prices, cmpOverrides]);
+
+  const totals = useMemo(() => {
+    const P = ledger.positions, C = ledger.closedTrades;
+    const realized = sum(P, (p) => p.realized), unrealized = sum(P, (p) => p.unrealized), charges = sum(P, (p) => p.charges);
+    const wins = C.filter((t) => t.pnl > 0).length, losses = C.filter((t) => t.pnl < 0).length;
+    const open = P.filter((p) => p.openQty > 1e-9);
+    return { realized, unrealized, total: realized + unrealized, charges, net: realized + unrealized - charges, wins, losses,
+      winRate: C.length ? (wins / C.length) * 100 : null, openCount: open.length, invested: sum(open, (p) => p.openCost),
+      openValue: sum(open, (p) => p.marketValue), missingCmp: open.filter((p) => !p.hasCmp).length };
+  }, [ledger]);
+
+  const returns = useMemo(() => {
+    const allDates = merged.fills.map((f) => f.date).sort();
+    const lastDate = allDates[allDates.length - 1];
+    const endDate = totals.openCount ? todayStr() : lastDate;
+    const sc = num(settings.startCapital), ov = num(settings.portfolioOverride);
+    const endValue = isNum(ov) ? ov + totals.realized : (isNum(sc) ? sc + totals.total : NaN);
+    const cagr = computeCAGR({ startCapital: sc, startDate: settings.startDate, endValue, endDate });
+    const flows = settings.flows.filter((f) => f.date && num(f.amount) > 0).map((f) => ({ date: f.date, amount: f.type === 'Payout' ? num(f.amount) : -num(f.amount) }));
+    const netIn = -sum(flows, (f) => f.amount);
+    const portfolioValue = isNum(ov) ? ov : netIn + totals.total;
+    const xirr = flows.length ? computeXIRR([...flows, { date: todayStr(), amount: portfolioValue }]) : { value: null, hint: 'Add pay-ins/payouts in Settings' };
+    return { cagr, xirr, portfolioValue, flowCount: flows.length };
+  }, [merged, totals, settings]);
+
+  const stats = { fills: merged.fills.length, trades: ledger.closedTrades.length, symbols: new Set(merged.fills.map((f) => f.symbol)).size, dupes: merged.dupes };
+  const chips = [
+    ...normalized.map(({ src, fills }) => ({ id: src.id, kind: src.kind, name: src.name, count: fills.length, removable: true })),
+    ...(manual.length ? [{ id: 'manual', kind: 'manual', name: 'Manual entries', count: manual.length, removable: true }] : []),
+  ];
+  const removeSource = (id) => { if (id === 'manual') setManual([]); else setSources((s) => s.filter((x) => x.id !== id)); };
+  const hasData = merged.fills.length > 0;
+  const go = (id) => { setTab(id); try { history.replaceState(null, '', '#' + id); } catch (e) {} window.scrollTo({ top: 0 }); };
+
+  if (!tokens) return null;
+  const current = TABS.find((t) => t.id === tab);
+  return (
+    <TokensCtx.Provider value={tokens}>
+      <div className="app">
+        <nav className="rail" aria-label="Sections">
+          <div className="brand"><Icon name="Gauge" size={20} /><span>Trade<b>Ledger</b></span></div>
+          {TABS.map((t) => <button key={t.id} className={'navbtn ' + (tab === t.id ? 'on' : '')} onClick={() => go(t.id)}><Icon name={t.icon} />{t.label}</button>)}
+          <div className="spacer" />
+          <button className="navbtn" onClick={() => setPanel('settings')}><Icon name="Settings" />Settings ▸ Capital</button>
+          <button className="navbtn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}><Icon name={theme === 'dark' ? 'Sun' : 'Moon'} />{theme === 'dark' ? 'Light mode' : 'Dark mode'}</button>
+        </nav>
+        <main className="main">
+          <div className="topbar">
+            <div className="title"><span className="label">Trading journal</span><h1 style={{ fontSize: 24 }}>{current.label}</h1></div>
+            <div className="row">
+              <button className="iconbtn" aria-label="Toggle theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}><Icon name={theme === 'dark' ? 'Sun' : 'Moon'} /></button>
+              <button className="iconbtn" aria-label="Settings" onClick={() => setPanel('settings')}><Icon name="Settings" /></button>
+            </div>
+          </div>
+          <DataSourceBar stats={stats} sources={chips} onRemove={removeSource} onUpload={addFiles} onApi={() => setPanel('api')} onMapping={() => setPanel('columns')} />
+          {toast && <div className={'note ' + (toast.kind === 'err' ? 'err' : 'ok')}>{toast.msg}</div>}
+          {sources.some((s) => s.kind === 'sample') && <div className="note info">Showing <b>sample data</b> (made-up example trades). Remove the “Sample data” chip and upload your own CSV to replace it.</div>}
+          {!hasData && tab !== 'journal' ? (
+            <EmptyState onFiles={addFiles} apiCfg={apiCfg} setApiCfg={setApiCfg} onFetched={onFetched} onSample={loadSample} onReadNamed={readNamed} />
+          ) : (
+            <>
+              {tab === 'overview' && <Overview ledger={ledger} totals={totals} returns={returns} onSettings={() => setPanel('settings')} />}
+              {tab === 'holdings' && <Holdings ledger={ledger} cmpOverrides={cmpOverrides} setCmp={(k, v) => setCmpOverrides((o) => { const n = { ...o }; if (String(v).trim() === '') delete n[k]; else n[k] = v; return n; })} />}
+              {tab === 'journal' && <Journal fills={merged.fills} ledger={ledger} remarks={remarks} setRemark={(k, v) => setRemarks((r) => ({ ...r, [k]: v }))} onFiles={addFiles}
+                onAddManual={(m) => setManual((x) => [...x, { ...m, id: uid() }])} />}
+              {tab === 'charts' && <Charts ledger={ledger} candles={candles} startCapital={num(settings.startCapital) || 0} />}
+              {tab === 'mind' && <Mind ledger={ledger} />}
+              {tab === 'simulator' && <Simulator ledger={ledger} candles={candles} riskPct={num(settings.riskPct)} />}
+            </>
+          )}
+        </main>
+        <nav className="bottomnav" aria-label="Sections">
+          {TABS.map((t) => <button key={t.id} className={tab === t.id ? 'on' : ''} onClick={() => go(t.id)}><Icon name={t.icon} size={18} />{t.label}</button>)}
+        </nav>
+      </div>
+      {panel === 'settings' && <Drawer title="Settings ▸ Capital" onClose={() => setPanel(null)}><SettingsCapital settings={settings} setSettings={setSettings} derived={returns} /></Drawer>}
+      {panel === 'api' && <Drawer title="Connect API" onClose={() => setPanel(null)}><ApiConnectPanel cfg={apiCfg} setCfg={setApiCfg} onFetched={onFetched} /></Drawer>}
+      {panel === 'columns' && <Drawer title="Detected schema" onClose={() => setPanel(null)}>
+        {sources.length === 0 ? <div className="muted">No file or API sources loaded yet.</div> : normalized.map(({ src, fills, errors }) => (
+          <SchemaEditor key={src.id} src={src} result={{ fills, errors }} onChange={(ns) => setSources((s) => s.map((x) => (x.id === ns.id ? ns : x)))} onRemove={() => removeSource(src.id)} />
+        ))}
+        <Card title="Expected columns"><ExpectedColumns /></Card>
+      </Drawer>}
+      {dragging && <div className="dropveil"><div>Drop CSV to import</div></div>}
+    </TokensCtx.Provider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>

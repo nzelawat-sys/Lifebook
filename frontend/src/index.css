@@ -158,3 +158,43 @@ textarea.atlas-input::placeholder, input.atlas-input::placeholder { color: var(-
     color: var(--atlas-ink-soft);
 }
 .atlas-rich-area:focus { border-bottom-color: var(--atlas-forest); }
+
+
+/* Optional light appearance; dark is the cinematic default. */
+:root:not(.dark) {
+    --background: 220 35% 97%;
+    --foreground: 222 35% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 35% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 35% 13%;
+    --primary: 217 91% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 25% 93%;
+    --secondary-foreground: 222 35% 13%;
+    --muted: 220 25% 93%;
+    --muted-foreground: 218 15% 43%;
+    --accent: 258 75% 62%;
+    --accent-foreground: 0 0% 100%;
+    --border: 220 18% 86%;
+    --input: 220 18% 86%;
+    --ring: 217 91% 52%;
+    --atlas-paper: #F5F7FC;
+    --atlas-paper-soft: #EAF0F9;
+    --atlas-paper-deeper: #DDE7F5;
+    --atlas-ink: #101827;
+    --atlas-ink-soft: #3E4B61;
+    --atlas-ink-muted: #68778E;
+    --atlas-line: rgba(48, 73, 112, 0.16);
+    --atlas-forest: #246BE0;
+    --atlas-forest-soft: #4389FF;
+    --atlas-terracotta: #7558D8;
+    --atlas-sage: #4588A8;
+    --atlas-grain: rgba(45, 80, 130, 0.045);
+}
+:root:not(.dark) .atlas-header { background: rgba(245, 247, 252, .82); }
+:root:not(.dark) .editorial-card {
+    background: linear-gradient(145deg, #fff, #F1F5FC);
+    box-shadow: 0 14px 40px rgba(31, 54, 91, .07);
+}
+:root:not(.dark) .editorial-card:hover { box-shadow: 0 20px 48px rgba(31, 54, 91, .13); }

@@ -1,2 +1,21 @@
-/* App-level overrides retained for any legacy classes; main styles in index.css */
-.App { background: #F9F6F0; min-height: 100vh; }
+.App { background: var(--atlas-paper); min-height: 100vh; }
+
+.atlas-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 76% 22%, rgba(35, 105, 224, .28), transparent 34%), radial-gradient(ellipse at 100% 100%, rgba(113, 76, 205, .16), transparent 38%), linear-gradient(115deg, #080D19 0%, #0B1730 55%, #101B35 100%);
+}
+.atlas-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: .25;
+    background-image: linear-gradient(rgba(130,165,220,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(130,165,220,.06) 1px, transparent 1px);
+    background-size: 58px 58px;
+    mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+.atlas-glow { position:absolute; width: 25rem; height:25rem; border-radius:50%; filter:blur(90px); background:rgba(38,113,255,.17); right:8%; top:-12rem; pointer-events:none; }
+.atlas-stat { border-left: 1px solid var(--atlas-line); padding-left: 1.25rem; }
+@media (max-width: 640px) { .atlas-stat { border-left: 0; border-top: 1px solid var(--atlas-line); padding: 1rem 0 0; } }

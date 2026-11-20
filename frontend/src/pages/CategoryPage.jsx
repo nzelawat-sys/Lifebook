@@ -141,7 +141,7 @@ export default function CategoryPage() {
                     />
                     <div className="absolute inset-0 max-w-7xl mx-auto px-6 lg:px-12 flex flex-col justify-end pb-12">
                         <Link
-                            to="/"
+                            to="/app"
                             data-testid="back-to-library"
                             className="inline-flex items-center gap-2 text-paper/90 hover:text-paper tracking-eyebrow mb-6"
                         >

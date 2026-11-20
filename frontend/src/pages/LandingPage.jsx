@@ -1,25 +1,6 @@
-import { ArrowDown, ArrowRight, ArrowUpRight, ChartLineUp, Compass, Layers, Lightbulb, LinkedinLogo, PlayCircle, Sparkle, XLogo } from "@phosphor-icons/react";
+import { ArrowDown, ArrowRight, ArrowUpRight, ChartLineUp, Compass, Layers, Lightbulb, LinkedinLogo, XLogo } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 
-const dimensions = [
-  ["Health & Fitness","Strength, energy and the habits that make everything else possible.","photo-1534438327276-14e5300c3a48"],
-  ["Mind & Learning","Ideas, books, skills and the discipline of staying curious.","photo-1456513080510-7bf3a84b82f8"],
-  ["Trading & Investing","A decade-plus in Indian markets, studying price, risk, process and performance.","photo-1611974789855-9c2a0a7236a3"],
-  ["Business & Building","Turning observations into useful products, systems and businesses.","photo-1486406146926-c627a92ad1ab"],
-  ["Relationships","The people, conversations and connections that give life meaning.","photo-1511632765486-a01980e01a18"],
-  ["Family","Roots, shared memories and the people who remain close through every chapter.","photo- family"],
-  ["Wealth & Finance","Building financial independence with patience, clarity and thoughtful decisions.","photo-146 Citadel"],
-  ["Spirituality","Stillness, values and a deeper perspective beyond outcomes.","photo-150**"],
-  ["Travel & Experiences","New places, unfamiliar perspectives and experiences worth remembering.","photo-146﻿"],
-  ["Impact & Giving","Using what I learn and build to create value beyond myself.","photo-153**"],
-  ["Lifestyle & Habits","The routines, environments and small choices that shape ordinary days.","photo-149**"],
-  ["Identity & Purpose","The principles, ambitions and questions that keep the journey intentional.","photo-147**"]
-];
-const imageIds = [
- "photo-1534438327276-14e5300c3a48","photo-1456513080510-7bf3a84b82f8","photo-1611974789855-9c2a0a7236a3","photo-1486406146926-c627a92ad1ab",
- "photo-1511632765486-a01980e01a18","photo-1511895426328-dc8714191300","photo-  ",
- "photo-1500530855697-b586d89ba3ee","photo-1464822759023-fed622ff2c3b","photo-1497366754035-f200968a6e72","photo-1494438639946-1ebd1d20bf85","photo-1470252649378-9c29740c9fa8"
-];
 const imageUrls = [
  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=900&q=85",
  "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=900&q=85",

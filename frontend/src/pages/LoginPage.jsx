@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Compass, ArrowRight, Sparkle } from "@phosphor-icons/react";
 
@@ -21,8 +21,8 @@ export default function LoginPage() {
         try {
             if (mode === "login") await login(email, password);
             else await register(name, email, password);
-            toast.success("Welcome to your Atlas.");
-            navigate("/");
+            toast.success("Welcome to your Lifebook.");
+            navigate("/app");
         } catch (err) {
             toast.error(err?.response?.data?.detail || "Something went wrong");
         } finally { setBusy(false); }
@@ -49,7 +49,7 @@ export default function LoginPage() {
                         {mode==="register" && <div><label className="tracking-eyebrow text-slate-300">Name</label><input data-testid="input-name" type="text" className="atlas-input mt-2" value={name} onChange={e=>setName(e.target.value)} required placeholder="Your name" /></div>}
                         <div><label className="tracking-eyebrow text-slate-300">Email</label><input data-testid="input-email" type="email" className="atlas-input mt-2" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="you@example.com" /></div>
                         <div><label className="tracking-eyebrow text-slate-300">Password</label><input data-testid="input-password" type="password" className="atlas-input mt-2" value={password} onChange={e=>setPassword(e.target.value)} required minLength={6} placeholder="••••••••" /></div>
-                        <button data-testid="submit-auth" type="submit" disabled={busy} className="mt-3 inline-flex items-center justify-center gap-3 rounded-xl bg-blue-600 px-7 py-3.5 font-semibold text-white shadow-lg shadow-blue-950/40 hover:bg-blue-500 hover:-translate-y-0.5 transition-all disabled:opacity-60">{busy?"Please wait…":mode==="login"?"Enter Atlas":"Begin your journey"} <ArrowRight size={18}/></button>
+                        <button data-testid="submit-auth" type="submit" disabled={busy} className="mt-3 inline-flex items-center justify-center gap-3 rounded-xl bg-blue-600 px-7 py-3.5 font-semibold text-white shadow-lg shadow-blue-950/40 hover:bg-blue-500 hover:-translate-y-0.5 transition-all disabled:opacity-60">{busy?"Please wait…":mode==="login"?"Enter Lifebook":"Begin your journey"} <ArrowRight size={18}/></button>
                     </form>
                     <p className="mt-9 text-xs text-slate-500 leading-relaxed">A private, single-user journal. Your reflections never leave your account.</p>
                 </div>
@@ -74,5 +74,5 @@ export default function LoginPage() {
 }
 
 function LinkBrand() {
-    return <div className="relative z-10 flex items-center gap-3"><span className="w-10 h-10 rounded-xl border border-blue-300/25 bg-blue-400/10 flex items-center justify-center text-blue-300"><Compass size={21}/></span><span className="font-display text-3xl tracking-tight">Atlas<span className="text-blue-400">.</span></span></div>;
+    return <div className="relative z-10 flex items-center gap-3"><span className="w-10 h-10 rounded-xl border border-blue-300/25 bg-blue-400/10 flex items-center justify-center text-blue-300"><Compass size={21}/></span><span className="font-display text-3xl tracking-tight">Lifebook<span className="text-blue-400">.</span></span></div>;
 }
